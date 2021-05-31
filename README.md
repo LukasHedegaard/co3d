@@ -99,7 +99,7 @@ python models/x3d/main.py --help
 ## R(2+1)D
 _R(2+1)D_ [[ArXiv](https://arxiv.org/abs/1705.07750), [Repo](https://pytorch.org/vision/stable/models.html#torchvision.models.video.r2plus1d_18)] is a CNN for activity recognition, which separates the 3D convolution into a spatial 2D convolution and a temporal 1D convolution in order to reduce the number of parameters and increase the network efficiency.
 
-See the [R(2+1)D README](models/r2plus1d/README.md) and command-line help
+See the command-line help
 ```bash
 python models/r2plus1d/main.py --help 
 ```
