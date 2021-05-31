@@ -1,0 +1,10 @@
+# These hparams don't quite fit the naming, but they are as found in 
+# https://github.com/facebookresearch/SlowFast/tree/master/configs/Kinetics
+resnet_depth: 50
+slowfast_alpha: 8
+slowfast_beta_inv: 8
+slowfast_fusion_conv_channel_ratio: 2
+slowfast_fusion_kernel_size: 5
+temporal_downsampling: 2
+frames_per_clip: 32
+image_size: 256
