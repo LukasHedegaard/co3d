@@ -65,7 +65,7 @@ Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further traini
 
 1. Fill in the information on your dataset folder path in the `.env` file
 
-1. Download dataset using [these instructions](https://github.com/LukasHedegaard/hare/blob/master/datasets/README.md)
+1. Download dataset using [these instructions](datasets/README.md)
 
 
 # Usage
