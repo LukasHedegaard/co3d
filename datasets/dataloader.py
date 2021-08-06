@@ -3,6 +3,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Tuple, Union
 
+from ride import Configs, RideClassificationDataset
+from ride.utils.env import DATASETS_PATH, NUM_CPU
+from ride.utils.logging import getLogger
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
@@ -14,15 +17,12 @@ from torchvision.transforms._transforms_video import (
 )
 
 from datasets.kinetics import Kinetics
+from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
 from datasets.video_ensemble import (
     SpatiallySamplingVideoEnsemble,
     TemporallySamplingVideoEnsemble,
 )
-from ride import Configs
-from ride import RideClassificationDataset
-from ride.utils.env import DATASETS_PATH, NUM_CPU
-from ride.utils.logging import getLogger
 
 logger = getLogger("datasets")
 
@@ -43,7 +43,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             name="dataset",
             type=str,
             default="kinetics400",
-            choices=["kinetics400", "kinetics600", "kinetics3"],
+            choices=["kinetics400", "kinetics600", "kinetics3", "thumos14"],
             strategy="constant",
             description=f"Dataset name. It is assumed that these datasets are available in the DATASETS_PATH env variable ({str(DATASETS_PATH)})",
         )
@@ -281,8 +281,8 @@ class ActionRecognitionDatasetLoader:
 
 @lru_cache()
 def train_val_test(
-    data_path=str(DATASETS_PATH / "hmdb51" / "data"),
-    annotation_path=str(DATASETS_PATH / "hmdb51" / "splits"),
+    data_path: str,
+    annotation_path: str,
     temporal_downsampling=None,
     step_between_clips=1,
     val_split_pct=0.15,
@@ -310,10 +310,10 @@ def train_val_test(
 
     if "kinetics" in data_path.lower():
         Ds = Kinetics
+    elif "thumos14" in data_path.lower():
+        Ds = Thumos14
     else:
-        raise ValueError(
-            "'root_path' must contain either 'ucf', 'hmdb', 'kinetics', or 'charades'"
-        )
+        raise ValueError("'root_path' must contain either 'kinetics', or 'thumos14'")
 
     scaled_pix_min = floor2(image_size * image_train_scale[0])
     scaled_pix_max = floor2(image_size * image_train_scale[1])
