@@ -55,7 +55,7 @@ clean:
 ## Test the setup
 test:
 	@echo ⚡⚡⚡ Testing ⚡⚡⚡
-	py.test --cov ride --cov-report term-missing
+	python -m pytest --cov models.cox3d --cov-report term-missing
 
 
 ## Lint the code
