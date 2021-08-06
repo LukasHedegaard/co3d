@@ -157,7 +157,7 @@ def test_CoX3D():
         x3d_final_batchnorm_zero_init=1,
     )
 
-    # Recurrent model
+    # Continual model
     remodel = CoX3D(
         dim_in=3,
         image_size=160,
@@ -194,7 +194,7 @@ def test_CoX3D():
 
     # Forward3d produces same outputs
     output = remodel.forward3d(input)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target, output, atol=1e-7)
 
     # Continuation is not exact due to zero paddings (even for boring video)
     output_next_frame = remodel.forward(input[:, :, -1])

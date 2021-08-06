@@ -189,7 +189,7 @@ def test_complex():
     rc3 = ConvCo3d.from_3d(regular, temporal_fill="zeros")
     rc3_output = rc3.forward3d(example_clip_large)
 
-    assert torch.allclose(regular_output, rc3_output)
+    assert torch.allclose(regular_output, rc3_output, atol=1e-7)
 
 
 def test_forward_continuation():
