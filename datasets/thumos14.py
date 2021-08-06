@@ -212,7 +212,7 @@ class Thumos14(torch.utils.data.Dataset):
         #     audio = self.audio_transform(audio)
 
         if self.label_transform is not None:
-            label = self.label_transform(labels)
+            labels = self.label_transform(labels)
 
         sample = (video, audio, labels, video_idx)
 
