@@ -61,7 +61,7 @@ test:
 ## Lint the code
 lint:
 	@echo ⚡⚡⚡ Fixing order of imports using isort ⚡⚡⚡
-	isort -y -sp . --multi-line=3 --trailing-comma --force-grid-wrap=0 --use-parentheses --line-width=88	
+	isort . --float-to-top --multi-line=3 --trailing-comma --force-grid-wrap=0 --use-parentheses --line-width=88	
 	@echo ⚡⚡⚡ Formatting with black ⚡⚡⚡
 	black -l 88 .	
 	@echo ⚡⚡⚡ Linting with flake8 ⚡⚡⚡
