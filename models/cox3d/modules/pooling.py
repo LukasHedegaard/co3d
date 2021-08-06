@@ -1,6 +1,7 @@
 from typing import Tuple, Union
 
 import torch
+from ride.utils.logging import getLogger
 from torch import Tensor
 from torch.nn.modules.pooling import (
     AdaptiveAvgPool1d,
@@ -15,8 +16,6 @@ from torch.nn.modules.pooling import (
     MaxPool3d,
     _triple,
 )
-
-from ride.utils.logging import getLogger
 
 from .utils import FillMode
 
@@ -83,7 +82,10 @@ def RecursivelyWindowPooled(cls: Pool2D) -> torch.nn.Module:  # noqa: C901
 
             # state is initialised in self.forward
 
-        def init_state(self, first_output: Tensor,) -> State:
+        def init_state(
+            self,
+            first_output: Tensor,
+        ) -> State:
             padding = self.make_padding(first_output)
             state_buffer = torch.stack(
                 [padding for _ in range(self.window_size)], dim=0
@@ -114,7 +116,11 @@ def RecursivelyWindowPooled(cls: Pool2D) -> torch.nn.Module:  # noqa: C901
             )
             return output
 
-        def _forward(self, input: Tensor, prev_state: State,) -> Tuple[Tensor, State]:
+        def _forward(
+            self,
+            input: Tensor,
+            prev_state: State,
+        ) -> Tuple[Tensor, State]:
             assert (
                 len(input.shape) == 4
             ), "Only a single frame should be passed at a time."
@@ -150,8 +156,8 @@ def RecursivelyWindowPooled(cls: Pool2D) -> torch.nn.Module:  # noqa: C901
             return pooled_window, (new_buffer, new_index)
 
         def forward3d(self, input: Tensor):
-            """ If input.shape[2] == self.window_size, a global pooling along temporal dimension is performed
-                Otherwise, the pooling is performed per frame
+            """If input.shape[2] == self.window_size, a global pooling along temporal dimension is performed
+            Otherwise, the pooling is performed per frame
             """
             assert (
                 len(input.shape) == 5

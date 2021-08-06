@@ -1,10 +1,11 @@
 import math
+
 import torch
+from ride import Configs, RideModule, TopKAccuracyMetric
+from ride.optimizers import SgdOneCycleOptimizer
 from torch import Tensor
 
 from datasets import ActionRecognitionDatasets
-from ride import RideModule, Configs, TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer
 
 from .head_helper import X3DHead
 from .resnet_helper import ResStage

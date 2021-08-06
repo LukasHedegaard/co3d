@@ -1,9 +1,8 @@
 from typing import Sequence
 
-from torchvision.datasets.video_utils import VideoClips
-
 from joblib import Memory
-from ride.utils.env import NUM_CPU, CACHE_PATH
+from ride.utils.env import CACHE_PATH, NUM_CPU
+from torchvision.datasets.video_utils import VideoClips
 
 cache = Memory(CACHE_PATH, verbose=1).cache
 

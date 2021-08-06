@@ -2,6 +2,7 @@ from typing import Tuple
 
 import torch
 import torch.nn.functional as F
+from ride.utils.logging import getLogger
 from torch import Tensor
 from torch.nn.modules.conv import (
     Conv3d,
@@ -12,7 +13,6 @@ from torch.nn.modules.conv import (
 )
 
 from models.cox3d.modules.utils import unsqueezed
-from ride.utils.logging import getLogger
 
 from .utils import FillMode
 

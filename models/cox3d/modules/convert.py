@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import torch
+from ride.utils.logging import getLogger
 from torch.nn import (
     AdaptiveAvgPool3d,
     AdaptiveMaxPool3d,
@@ -12,8 +13,6 @@ from torch.nn import (
     Module,
 )
 from torch.nn.modules.activation import ReLU, Sigmoid, Softmax
-
-from ride.utils.logging import getLogger
 
 from .activation import Swish, convert_softmax
 from .batchnorm import convert_batchnorm3d

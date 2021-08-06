@@ -1,9 +1,8 @@
 from typing import Tuple
 
 import torch
-from torch import Tensor
-
 from ride.utils.logging import getLogger
+from torch import Tensor
 
 from .utils import FillMode
 
@@ -14,7 +13,9 @@ logger = getLogger(__name__)
 
 class Delay(torch.nn.Module):
     def __init__(
-        self, window_size: int, temporal_fill: FillMode = "replicate",
+        self,
+        window_size: int,
+        temporal_fill: FillMode = "replicate",
     ):
         assert window_size > 0
         assert temporal_fill in {"zeros", "replicate"}
@@ -26,7 +27,10 @@ class Delay(torch.nn.Module):
         super(Delay, self).__init__()
         # state is initialised in self.forward
 
-    def init_state(self, first_output: Tensor,) -> State:
+    def init_state(
+        self,
+        first_output: Tensor,
+    ) -> State:
         padding = self.make_padding(first_output)
         state_buffer = torch.stack([padding for _ in range(self.window_size)], dim=0)
         state_index = 0

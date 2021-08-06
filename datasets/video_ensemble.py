@@ -38,10 +38,10 @@ def uniform_subset(population: Sequence[int], k: int) -> List[int]:
 
 
 class SpatiallySamplingVideoEnsemble(Dataset):
-    """ Wraps a video dataset ensemble view.
+    """Wraps a video dataset ensemble view.
 
-        For each input video clip, a spatial_sampling_strategy is used to extract multiple clips.
-        The return of this dataset is an example index in addition to the original data.
+    For each input video clip, a spatial_sampling_strategy is used to extract multiple clips.
+    The return of this dataset is an example index in addition to the original data.
     """
 
     def __init__(
@@ -99,9 +99,9 @@ class SpatiallySamplingVideoEnsemble(Dataset):
 
 
 class TemporallySamplingVideoEnsemble(Dataset):
-    """ Wraps a video dataset which uses the torchvision VideoClips object (e.g. Hmdb51 and Ucf101)
-        to create an ensemble view, uniformly sampling videos through time.
-        For each video, num_temporal_clips are uniformly sampled from the temporal dimension.
+    """Wraps a video dataset which uses the torchvision VideoClips object (e.g. Hmdb51 and Ucf101)
+    to create an ensemble view, uniformly sampling videos through time.
+    For each video, num_temporal_clips are uniformly sampled from the temporal dimension.
     """
 
     def __init__(

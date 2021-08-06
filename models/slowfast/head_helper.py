@@ -139,7 +139,12 @@ class ResNetBasicHead(nn.Module):
     """
 
     def __init__(
-        self, dim_in, num_classes, pool_size, dropout_rate=0.0, act_func="softmax",
+        self,
+        dim_in,
+        num_classes,
+        pool_size,
+        dropout_rate=0.0,
+        act_func="softmax",
     ):
         """
         The `__init__` method of any subclass should also contain these

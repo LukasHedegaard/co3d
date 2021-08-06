@@ -65,7 +65,15 @@ class VideoModelStem(nn.Module):
         super(VideoModelStem, self).__init__()
 
         assert (
-            len({len(dim_in), len(dim_out), len(kernel), len(stride), len(padding),})
+            len(
+                {
+                    len(dim_in),
+                    len(dim_out),
+                    len(kernel),
+                    len(stride),
+                    len(padding),
+                }
+            )
             == 1
         ), "Input pathway dimensions are not consistent."
         self.num_pathways = len(dim_in)
