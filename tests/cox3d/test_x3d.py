@@ -13,12 +13,12 @@ from torchvision.transforms._transforms_video import (
 
 from datasets.transforms import RandomShortSideScaleJitterVideo
 from models.cox3d.modules.x3d import (
-    ReResBlock,
-    ReResStage,
-    ReVideoModelStem,
     CoX3D,
     CoX3DHead,
     CoX3DTransform,
+    ReResBlock,
+    ReResStage,
+    ReVideoModelStem,
 )
 from models.x3d.head_helper import X3DHead
 from models.x3d.resnet_helper import ResBlock, ResStage, X3DTransform

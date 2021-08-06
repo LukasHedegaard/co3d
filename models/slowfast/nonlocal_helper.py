@@ -86,7 +86,9 @@ class Nonlocal(nn.Module):
 
         # TODO: change the name to `norm`
         self.bn = norm_module(
-            num_features=self.dim, eps=self.norm_eps, momentum=self.norm_momentum,
+            num_features=self.dim,
+            eps=self.norm_eps,
+            momentum=self.norm_momentum,
         )
         # Zero initializing the final bn.
         self.bn.transform_final_bn = zero_init_final_norm
@@ -94,7 +96,9 @@ class Nonlocal(nn.Module):
         # Optional to add the spatial-temporal pooling.
         if self.use_pool:
             self.pool = nn.MaxPool3d(
-                kernel_size=self.pool_size, stride=self.pool_size, padding=[0, 0, 0],
+                kernel_size=self.pool_size,
+                stride=self.pool_size,
+                padding=[0, 0, 0],
             )
 
     def forward(self, x):

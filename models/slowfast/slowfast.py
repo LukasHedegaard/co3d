@@ -1,8 +1,9 @@
 import torch
+from ride import Configs, RideModule, TopKAccuracyMetric
+from ride.optimizers import SgdOneCycleOptimizer
+
 from datasets import ActionRecognitionDatasets
 from models.slowfast.video_model_builder import SlowFast
-from ride import RideModule, Configs, TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer
 
 from .model_loading import map_loaded_weights_from_caffe2
 
