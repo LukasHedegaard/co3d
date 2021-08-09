@@ -54,7 +54,7 @@ class SE(torch.nn.Module):
         return x_in * x
 
 
-class ReSe(torch.nn.Module):
+class CoSe(torch.nn.Module):
     """Recursive Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
 
     def _round_width(self, width, multiplier, min_width=8, divisor=8):
@@ -93,7 +93,7 @@ class ReSe(torch.nn.Module):
             relu_act (bool): whether to use ReLU activation instead
                 of Swish (default).
         """
-        super(ReSe, self).__init__()
+        super(CoSe, self).__init__()
         self.avg_pool = {
             "clip": lambda: AdaptiveAvgPoolCo3d(
                 window_size, output_size=(1, 1), temporal_fill=temporal_fill
