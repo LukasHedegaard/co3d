@@ -11,7 +11,7 @@ class FillMode(Enum):
     ZEROS = "zeros"
 
 
-def unsqueezed(instance: Module, dim: int = 2):
+def continual(instance: Module, dim: int = 2):
     def decorator(func: Callable[[Tensor], Tensor]):
         @wraps(func)
         def call(x: Tensor) -> Tensor:

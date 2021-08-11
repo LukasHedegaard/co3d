@@ -2,6 +2,7 @@ from typing import Tuple
 
 import torch
 import torch.nn.functional as F
+from continual import Continual as continual
 from ride.utils.logging import getLogger
 from torch import Tensor
 from torch.nn.modules.conv import (
@@ -11,8 +12,6 @@ from torch.nn.modules.conv import (
     _size_3_t,
     _triple,
 )
-
-from models.cox3d.modules.utils import unsqueezed
 
 from .utils import FillMode
 
@@ -32,7 +31,7 @@ def convert_conv3d(
         and instance.stride[0] == 1
         and instance.dilation[0] == 1
     ):
-        return unsqueezed(instance)
+        return continual(instance)
     else:
         return ConvCo3d.from_3d(instance, temporal_fill)
 

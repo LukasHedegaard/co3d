@@ -1,11 +1,11 @@
 import torch
+from continual import Continual as continual
 from torch import Tensor
 from torch.nn import AdaptiveAvgPool3d, Conv3d, ReLU, Sigmoid
 from torch.nn.modules.pooling import AdaptiveAvgPool2d
 
 from .activation import Swish
 from .pooling import AdaptiveAvgPoolCo3d
-from .utils import unsqueezed
 
 
 class SE(torch.nn.Module):
@@ -98,12 +98,12 @@ class CoSe(torch.nn.Module):
             "clip": lambda: AdaptiveAvgPoolCo3d(
                 window_size, output_size=(1, 1), temporal_fill=temporal_fill
             ),
-            "frame": lambda: unsqueezed(AdaptiveAvgPool2d(output_size=(1, 1))),
+            "frame": lambda: continual(AdaptiveAvgPool2d(output_size=(1, 1))),
         }[scope]()
         dim_fc = self._round_width(dim_in, ratio)
-        self.fc1 = unsqueezed(Conv3d(dim_in, dim_fc, 1, bias=True))
+        self.fc1 = continual(Conv3d(dim_in, dim_fc, 1, bias=True))
         self.fc1_act = ReLU() if relu_act else Swish()
-        self.fc2 = unsqueezed(Conv3d(dim_fc, dim_in, 1, bias=True))
+        self.fc2 = continual(Conv3d(dim_fc, dim_in, 1, bias=True))
 
         self.fc2_sig = Sigmoid()
 
