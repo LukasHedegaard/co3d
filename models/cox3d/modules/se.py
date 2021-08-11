@@ -55,7 +55,7 @@ class SE(torch.nn.Module):
 
 
 class CoSe(torch.nn.Module):
-    """Recursive Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
+    """Continual Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
 
     def _round_width(self, width, multiplier, min_width=8, divisor=8):
         """
