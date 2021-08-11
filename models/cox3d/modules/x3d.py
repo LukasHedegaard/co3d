@@ -7,7 +7,7 @@ from .conv import ConvCo3d
 from .delay import Delay
 from .pooling import AdaptiveAvgPoolCo3d, AvgPoolCo3d
 from .se import CoSe
-from .utils import FillMode, unsqueezed
+from .utils import FillMode, continual
 
 
 class CoX3DTransform(torch.nn.Module):
@@ -99,7 +99,7 @@ class CoX3DTransform(torch.nn.Module):
         (str1x1, str3x3) = (stride, 1) if self._stride_1x1 else (1, stride)
 
         # 1x1x1, BN, ReLU.
-        self.a = unsqueezed(
+        self.a = continual(
             torch.nn.Conv3d(
                 dim_in,
                 dim_inner,
@@ -109,7 +109,7 @@ class CoX3DTransform(torch.nn.Module):
                 bias=False,
             )
         )
-        self.a_bn = unsqueezed(
+        self.a_bn = continual(
             norm_module(num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
         )
 
@@ -128,7 +128,7 @@ class CoX3DTransform(torch.nn.Module):
             temporal_fill=temporal_fill,
         )
 
-        self.b_bn = unsqueezed(
+        self.b_bn = continual(
             norm_module(num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
         )
 
@@ -148,7 +148,7 @@ class CoX3DTransform(torch.nn.Module):
             self.b_relu = torch.nn.ReLU(inplace=self._inplace_relu)
 
         # 1x1x1, BN.
-        self.c = unsqueezed(
+        self.c = continual(
             torch.nn.Conv3d(
                 dim_inner,
                 dim_out,
@@ -158,7 +158,7 @@ class CoX3DTransform(torch.nn.Module):
                 bias=False,
             )
         )
-        self.c_bn = unsqueezed(
+        self.c_bn = continual(
             norm_module(num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
         )
         self.c_bn.transform_final_bn = True
@@ -239,7 +239,7 @@ class ReResBlock(torch.nn.Module):
         self._drop_connect_rate = drop_connect_rate
         # Use skip connection with projection if dim or res change.
         if (dim_in != dim_out) or (stride != 1):
-            self.branch1 = unsqueezed(
+            self.branch1 = continual(
                 torch.nn.Conv3d(
                     dim_in,
                     dim_out,
@@ -250,7 +250,7 @@ class ReResBlock(torch.nn.Module):
                     dilation=1,
                 )
             )
-            self.branch1_bn = unsqueezed(
+            self.branch1_bn = continual(
                 norm_module(num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
             )
         self.branch2 = trans_func(
@@ -607,7 +607,7 @@ class CoX3DHead(torch.nn.Module):
         temporal_fill,
     ):
 
-        self.conv_5 = unsqueezed(
+        self.conv_5 = continual(
             torch.nn.Conv3d(
                 dim_in,
                 dim_inner,
@@ -617,7 +617,7 @@ class CoX3DHead(torch.nn.Module):
                 bias=False,
             )
         )
-        self.conv_5_bn = unsqueezed(
+        self.conv_5_bn = continual(
             norm_module(num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt)
         )
         self.conv_5_relu = torch.nn.ReLU(self.inplace_relu)
@@ -629,7 +629,7 @@ class CoX3DHead(torch.nn.Module):
                 self.pool_size[0], temporal_fill, 1, self.pool_size[1:], stride=1
             )
 
-        self.lin_5 = unsqueezed(
+        self.lin_5 = continual(
             torch.nn.Conv3d(
                 dim_inner,
                 dim_out,
@@ -640,7 +640,7 @@ class CoX3DHead(torch.nn.Module):
             )
         )
         if self.bn_lin5_on:
-            self.lin_5_bn = unsqueezed(
+            self.lin_5_bn = continual(
                 norm_module(num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
             )
         self.lin_5_relu = torch.nn.ReLU(self.inplace_relu)
@@ -653,7 +653,7 @@ class CoX3DHead(torch.nn.Module):
 
         # Softmax for evaluation and testing.
         if self.act_func == "softmax":
-            self.act = unsqueezed(torch.nn.Softmax(dim=4))
+            self.act = continual(torch.nn.Softmax(dim=4))
         elif self.act_func == "sigmoid":
             self.act = torch.nn.Sigmoid()
         else:
@@ -783,7 +783,7 @@ class CoX3DStem(torch.nn.Module):
         self._construct_stem(dim_in, dim_out, norm_module, temporal_fill)
 
     def _construct_stem(self, dim_in, dim_out, norm_module, temporal_fill):
-        self.conv_xy = unsqueezed(
+        self.conv_xy = continual(
             torch.nn.Conv3d(
                 dim_in,
                 dim_out,
@@ -803,7 +803,7 @@ class CoX3DStem(torch.nn.Module):
             groups=dim_out,
             temporal_fill=temporal_fill,
         )
-        self.bn = unsqueezed(
+        self.bn = continual(
             norm_module(num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
         )
         self.relu = torch.nn.ReLU(self.inplace_relu)
@@ -965,7 +965,7 @@ class CoX3D(torch.nn.Module):
         temporal_fill: FillMode = "replicate",
     ):
         torch.nn.Module.__init__(self)
-        self.norm_module = torch.nn.BatchNorm3d  # Will be unsqueezed
+        self.norm_module = torch.nn.BatchNorm3d  # Will be continual
 
         exp_stage = 2.0
         self.dim_conv1 = x3d_conv1_dim

@@ -1,11 +1,12 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
-from datasets import ActionRecognitionDatasets
-from models.cox3d.modules.x3d import CoX3D
 from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdCyclicLrOptimizer
 from ride.utils.logging import getLogger
+
+from datasets import ActionRecognitionDatasets
+from models.cox3d.modules.x3d import CoX3D
 
 logger = getLogger("CoX3D")
 
