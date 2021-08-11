@@ -1,6 +1,6 @@
 import torch
 
-from models.cox3d.modules.se import SE, ReSe
+from models.cox3d.modules.se import SE, CoSe
 
 torch.manual_seed(42)
 
@@ -14,7 +14,7 @@ def test_se_block():
     target1 = se(example_input)
 
     # Recursive SE block
-    rse = ReSe(window_size=4, dim_in=2, ratio=10, scope="clip")
+    rse = CoSe(window_size=4, dim_in=2, ratio=10, scope="clip")
     rse.load_state_dict(se.state_dict())
 
     # Frame-wise

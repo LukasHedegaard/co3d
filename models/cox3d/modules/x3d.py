@@ -6,7 +6,7 @@ from .activation import Swish
 from .conv import ConvCo3d
 from .delay import Delay
 from .pooling import AdaptiveAvgPoolCo3d, AvgPoolCo3d
-from .se import ReSe
+from .se import CoSe
 from .utils import FillMode, unsqueezed
 
 
@@ -135,7 +135,7 @@ class CoX3DTransform(torch.nn.Module):
         # Apply SE attention or not
         use_se = True if (self._block_idx + 1) % 2 else False
         if self._se_ratio > 0.0 and use_se:
-            self.se = ReSe(
+            self.se = CoSe(
                 temporal_window_size,
                 dim_in=dim_inner,
                 ratio=self._se_ratio,
