@@ -1,11 +1,11 @@
 import math
 
 import torch
+from continual import AdaptiveAvgPoolCo3d, AvgPoolCo3d
 
 from .activation import Swish
 from .conv import ConvCo3d
 from .delay import Delay
-from .pooling import AdaptiveAvgPoolCo3d, AvgPoolCo3d
 from .se import CoSe
 from .utils import FillMode, continual
 

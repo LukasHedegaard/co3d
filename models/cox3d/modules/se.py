@@ -1,11 +1,11 @@
 import torch
+from continual import AdaptiveAvgPoolCo3d
 from continual import Continual as continual
 from torch import Tensor
 from torch.nn import AdaptiveAvgPool3d, Conv3d, ReLU, Sigmoid
 from torch.nn.modules.pooling import AdaptiveAvgPool2d
 
 from .activation import Swish
-from .pooling import AdaptiveAvgPoolCo3d
 
 
 class SE(torch.nn.Module):
