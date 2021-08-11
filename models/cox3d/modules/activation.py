@@ -1,16 +1,4 @@
 import torch
-from torch.nn.modules.activation import Softmax
-
-from .utils import FillMode
-
-
-def convert_softmax(
-    instance: torch.nn.Softmax,
-    window_size: int = None,  # Not used: only there to satisfy interface
-    temporal_fill: FillMode = "replicate",  # Not used: only there to satisfy interface
-):
-    assert instance.dim <= 4, "Cannot convert Softmax with dim > 4."
-    return Softmax(dim=3 if instance.dim == 4 else instance.dim)
 
 
 class Swish(torch.nn.Module):

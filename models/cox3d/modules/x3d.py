@@ -1,12 +1,11 @@
 import math
 
 import torch
-from continual import AdaptiveAvgPoolCo3d, AvgPoolCo3d, Delay
+from continual import AdaptiveAvgPoolCo3d, AvgPoolCo3d, ConvCo3d, Delay, continual
+from continual.utils import FillMode
 
 from .activation import Swish
-from .conv import ConvCo3d
 from .se import CoSe
-from .utils import FillMode, continual
 
 
 class CoX3DTransform(torch.nn.Module):
