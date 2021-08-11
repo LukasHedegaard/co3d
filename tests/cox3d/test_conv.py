@@ -72,7 +72,7 @@ def test_basic_forward():
     )
     target = conv(example_clip)
 
-    rconv = ConvCo3d.from_3d(conv)
+    rconv = ConvCo3d.from_regular(conv)
     # rconv = ConvCo3d(
     #     in_channels=1,
     #     out_channels=1,
@@ -101,7 +101,7 @@ def test_forward_long_kernel():
     )
     target = conv(example_clip)
 
-    rconv = ConvCo3d.from_3d(conv)
+    rconv = ConvCo3d.from_regular(conv)
     # rconv = ConvCo3d(
     #     in_channels=1,
     #     out_channels=1,
@@ -130,7 +130,7 @@ def test_from_conv3d():
     )
     target = regular(example_clip)
 
-    rc3 = ConvCo3d.from_3d(regular)
+    rc3 = ConvCo3d.from_regular(regular)
 
     output = []
     for i in range(example_clip.shape[2]):
@@ -157,7 +157,7 @@ def test_from_conv3d_bad_shape():
     )
 
     # Also warns
-    rc3 = ConvCo3d.from_3d(regular)
+    rc3 = ConvCo3d.from_regular(regular)
 
     # Changed               V
     assert rc3.dilation == (1, 2, 2)
@@ -186,7 +186,7 @@ def test_complex():
     )
     regular_output = regular(example_clip_large).detach()
 
-    rc3 = ConvCo3d.from_3d(regular, temporal_fill="zeros")
+    rc3 = ConvCo3d.from_regular(regular, temporal_fill="zeros")
     rc3_output = rc3.forward_regular(example_clip_large)
 
     assert torch.allclose(regular_output, rc3_output, atol=1e-7)
@@ -201,7 +201,7 @@ def test_forward_continuation():
         padding=(1, 1, 1),
         padding_mode="zeros",
     )
-    rconv = ConvCo3d.from_3d(conv, temporal_fill="zeros")
+    rconv = ConvCo3d.from_regular(conv, temporal_fill="zeros")
 
     # Run batch inference and fill memory
     target1 = conv(example_clip)
@@ -245,9 +245,9 @@ def test_stacked_impulse_response():
 
     # Init continual
     cnn = torch.nn.Sequential(
-        ConvCo3d.from_3d(conv1, temporal_fill="zeros"),
-        ConvCo3d.from_3d(conv2, temporal_fill="zeros"),
-        ConvCo3d.from_3d(conv2, temporal_fill="zeros"),
+        ConvCo3d.from_regular(conv1, temporal_fill="zeros"),
+        ConvCo3d.from_regular(conv2, temporal_fill="zeros"),
+        ConvCo3d.from_regular(conv2, temporal_fill="zeros"),
     )
 
     cnn(ones)  # Impulse
@@ -289,8 +289,8 @@ def test_stacked_no_pad():
     )
 
     # Init continual
-    rconv1 = ConvCo3d.from_3d(conv1, temporal_fill="zeros")
-    rconv2 = ConvCo3d.from_3d(conv2, temporal_fill="zeros")
+    rconv1 = ConvCo3d.from_regular(conv1, temporal_fill="zeros")
+    rconv2 = ConvCo3d.from_regular(conv2, temporal_fill="zeros")
 
     # Targets
     target11 = conv1(long_example_clip)

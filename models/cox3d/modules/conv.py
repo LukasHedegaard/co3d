@@ -33,7 +33,7 @@ def convert_conv3d(
     ):
         return continual(instance)
     else:
-        return ConvCo3d.from_3d(instance, temporal_fill)
+        return ConvCo3d.from_regular(instance, temporal_fill)
 
 
 class ConvCo3d(_ConvNd):
@@ -157,7 +157,7 @@ class ConvCo3d(_ConvNd):
             return None
 
     @staticmethod
-    def from_3d(
+    def from_regular(
         module: torch.nn.Conv3d, temporal_fill: FillMode = "replicate"
     ) -> "ConvCo3d":
         # padding = (0, *module.padding[1:])
