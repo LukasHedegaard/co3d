@@ -410,7 +410,7 @@ def test_ResStage_multi():
 
     # Forward3d also works
     outputs2 = rtrans.forward3d([example_clip])[0]
-    assert torch.allclose(target, outputs2)
+    assert torch.allclose(target, outputs2, atol=5e-4)
 
 
 def test_ResStage_single():
@@ -495,7 +495,7 @@ def test_ResStage_single():
 
     # Forward3d also works
     outputs2 = rtrans.forward3d([example_clip])[0]
-    assert torch.allclose(target, outputs2)
+    assert torch.allclose(target, outputs2, atol=5e-4)
 
 
 def test_ResBlock():
@@ -575,7 +575,7 @@ def test_ResBlock():
 
     # Forward3d also works as expected
     outputs2 = rtrans.forward3d(example_clip)
-    assert torch.allclose(target, outputs2)
+    assert torch.allclose(target, outputs2, atol=5e-4)
 
 
 def test_CoX3DTransform():
@@ -625,7 +625,7 @@ def test_CoX3DTransform():
 
     # Forward 3D works like the original
     output3d = rtrans.forward3d(example_clip)
-    assert torch.allclose(target, output3d)
+    assert torch.allclose(target, output3d, atol=5e-4)
 
     o = []
     # Manual zero pad (due to padding=1 in Conv3d)
@@ -655,4 +655,4 @@ def test_CoX3DTransform():
 
     # Forward 3D works like the original
     output3d = rtrans.forward3d(example_clip)
-    assert torch.allclose(target, output3d)
+    assert torch.allclose(target, output3d, atol=5e-4)
