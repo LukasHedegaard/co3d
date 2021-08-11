@@ -123,7 +123,7 @@ class CoX3DRide(
             default="replicate",
             choices=["zeros", "replicate"],
             strategy="choice",
-            description="Fill mode for samples along temporal dimension. This is used at state initialisation and in `forward3d` as padding along the temporal dimension.",
+            description="Fill mode for samples along temporal dimension. This is used at state initialisation and in `forward_regular` as padding along the temporal dimension.",
         )
         c.add(
             name="co3d_forward_mode",
@@ -227,7 +227,7 @@ class CoX3DRide(
 
         # Forward whole clip to init state
         if "clip" in self.hparams.co3d_forward_mode:
-            result = CoX3D.forward3d(self, x[:, :, : self.temporal_window_size])
+            result = CoX3D.forward_regular(self, x[:, :, : self.temporal_window_size])
 
         # Flush state with intermediate frames
         if "init" in self.hparams.co3d_forward_mode:

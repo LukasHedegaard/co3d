@@ -113,11 +113,11 @@ class CoSe(torch.nn.Module):
             x = module(x)
         return x_in * x
 
-    def forward3d(self, x: Tensor) -> Tensor:
+    def forward_regular(self, x: Tensor) -> Tensor:
         x_in = x
         for module in self.children():
-            if hasattr(module, "forward3d"):
-                x = module.forward3d(x)
+            if hasattr(module, "forward_regular"):
+                x = module.forward_regular(x)
             else:
                 x = module(x)
         return x_in * x

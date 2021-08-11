@@ -57,7 +57,7 @@ class ConvCo3d(_ConvNd):
         Assuming an input of shape `(B, C, T, H, W)`, it computes the convolution over one temporal instant `t` at a time
         where `t` ∈ `range(T)`, and keeps an internal state. Two forward modes are supported here.
 
-        `forward3d` operates identically to `Conv3d.forward`
+        `forward_regular` operates identically to `Conv3d.forward`
 
         `forward`   takes an input of shape `(B, C, H, W)`, and computes a single-frame output (B, C', H', W') based on its internal state.
                     On the first execution, the state is initialised with either ``'zeros'`` (corresponding to a zero padding of kernel_size[0]-1)
@@ -75,7 +75,7 @@ class ConvCo3d(_ConvNd):
             dilation (int or tuple, optional): Spacing between kernel elements. NB: dilation > 1 over the first channel is not supported. Default: 1
             groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1
             bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True``
-            temporal_fill (string, optional): ``'zeros'`` or ``'replicate'`` (= "boring video"). `temporal_fill` determines how state is initialised and which padding is applied during `forward3d` along the temporal dimension. Default: ``'replicate'``
+            temporal_fill (string, optional): ``'zeros'`` or ``'replicate'`` (= "boring video"). `temporal_fill` determines how state is initialised and which padding is applied during `forward_regular` along the temporal dimension. Default: ``'replicate'``
 
         Attributes:
             weight (Tensor): the learnable weights of the module of shape
@@ -97,7 +97,7 @@ class ConvCo3d(_ConvNd):
         padding = _triple(padding)
         if padding[0] != 0:
             logger.debug(
-                "Padding along the temporal dimension only affects the computation in `forward3d`. In `forward` it is omitted."
+                "Padding along the temporal dimension only affects the computation in `forward_regular`. In `forward` it is omitted."
             )
 
         stride = _triple(stride)
@@ -249,7 +249,7 @@ class ConvCo3d(_ConvNd):
         next_index = (index + 1) % tot
         return x_out, (next_buffer, next_index)
 
-    def forward3d(self, input: Tensor):
+    def forward_regular(self, input: Tensor):
         assert (
             len(input.shape) == 5
         ), "A tensor of size B,C,T,H,W should be passed as input."

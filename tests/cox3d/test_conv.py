@@ -89,7 +89,7 @@ def test_basic_forward():
     x2 = rconv(example_clip[:, :, 3])
     output = torch.tensor([[[[[x1]], [[x2]]]]])
 
-    output_alternative = rconv.forward3d(example_clip)
+    output_alternative = rconv.forward_regular(example_clip)
 
     assert torch.allclose(output, output_alternative)
     assert torch.allclose(output, target)
@@ -118,7 +118,7 @@ def test_forward_long_kernel():
     x2 = rconv(example_clip[:, :, 3])
     output = torch.tensor([[[[[x1]], [[x2]]]]])
 
-    output_alternative = rconv.forward3d(example_clip)
+    output_alternative = rconv.forward_regular(example_clip)
 
     assert torch.allclose(output, output_alternative)
     assert torch.allclose(output, target)
@@ -140,7 +140,7 @@ def test_from_conv3d():
         assert torch.allclose(target[:, :, t], output[t + (T - 1)])
 
     # Alternative: gives same output as regular version
-    output3 = rc3.forward3d(example_clip)
+    output3 = rc3.forward_regular(example_clip)
 
     assert torch.allclose(output3, target)
 
@@ -187,7 +187,7 @@ def test_complex():
     regular_output = regular(example_clip_large).detach()
 
     rc3 = ConvCo3d.from_3d(regular, temporal_fill="zeros")
-    rc3_output = rc3.forward3d(example_clip_large)
+    rc3_output = rc3.forward_regular(example_clip_large)
 
     assert torch.allclose(regular_output, rc3_output, atol=1e-7)
 
@@ -205,7 +205,7 @@ def test_forward_continuation():
 
     # Run batch inference and fill memory
     target1 = conv(example_clip)
-    output1 = rconv.forward3d(example_clip)
+    output1 = rconv.forward_regular(example_clip)
     assert torch.allclose(target1, output1)
 
     # Next forward
@@ -268,7 +268,7 @@ def test_stacked_impulse_response():
 
 
 def test_stacked_no_pad():
-    # Without initialisation using forward3D, the output has no delay
+    # Without initialisation using forward_regular, the output has no delay
 
     # Init regular
     conv1 = torch.nn.Conv3d(
@@ -300,8 +300,8 @@ def test_stacked_no_pad():
     target22 = conv2(target21)
 
     # Test 3D mode
-    output11 = rconv1.forward3d(long_example_clip)
-    output12 = rconv2.forward3d(output11)
+    output11 = rconv1.forward_regular(long_example_clip)
+    output12 = rconv2.forward_regular(output11)
     torch.allclose(target12, output12, atol=5e-8)
 
     # Next 2D forward
