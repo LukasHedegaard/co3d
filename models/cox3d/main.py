@@ -1,11 +1,12 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
-from datasets import ActionRecognitionDatasets
-from models.cox3d.modules.x3d import CoX3D
 from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdCyclicLrOptimizer
 from ride.utils.logging import getLogger
+
+from datasets import ActionRecognitionDatasets
+from models.cox3d.modules.x3d import CoX3D
 
 logger = getLogger("CoX3D")
 
@@ -213,7 +214,6 @@ class CoX3DRide(
         logger.info(f"Model receptive field: {receptive_field} frames")
 
     def forward(self, x):
-
         if not hasattr(self, "_current_input_shape"):
             self._current_input_shape = x.shape
 
@@ -256,6 +256,10 @@ class CoX3DRide(
             result /= self.hparams.co3d_num_forward_frames
 
         return result
+
+    def loss(self, preds, targets):
+        print("Wazzzaaa?")
+        return -1.0
 
 
 if __name__ == "__main__":
