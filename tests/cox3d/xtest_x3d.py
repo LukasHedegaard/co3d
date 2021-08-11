@@ -192,8 +192,8 @@ def test_CoX3D():
     target = model(input)
     target_top10 = torch.topk(target, k=10)[1][0].tolist()
 
-    # Forward3d produces same outputs
-    output = remodel.forward3d(input)
+    # forward_regular produces same outputs
+    output = remodel.forward_regular(input)
     assert torch.allclose(target, output, atol=1e-7)
 
     # Continuation is not exact due to zero paddings (even for boring video)
@@ -276,8 +276,8 @@ def test_VideoModelStem():
     for t in range(1, target.shape[2]):
         assert torch.allclose(target[:, :, t], outputs[t + shift])
 
-    # Forward3d also works
-    outputs2 = rtrans.forward3d([example_clip])[0]
+    # forward_regular also works
+    outputs2 = rtrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -326,8 +326,8 @@ def test_CoX3DHead():
 
     assert torch.allclose(target, outputs[3])
 
-    # Forward3d also works
-    outputs2 = rtrans.forward3d([example_clip])[0]
+    # forward_regular also works
+    outputs2 = rtrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -408,8 +408,8 @@ def test_ResStage_multi():
     for t in range(1, target.shape[2]):
         assert torch.allclose(target[:, :, t], outputs[t + shift], atol=5e-4)
 
-    # Forward3d also works
-    outputs2 = rtrans.forward3d([example_clip])[0]
+    # forward_regular also works
+    outputs2 = rtrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -493,8 +493,8 @@ def test_ResStage_single():
     # After temporal_window_size inputs it also produces precise computation
     torch.allclose(target[:, :, 3], outputs[3 + shift], atol=1e-9)
 
-    # Forward3d also works
-    outputs2 = rtrans.forward3d([example_clip])[0]
+    # forward_regular also works
+    outputs2 = rtrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -573,8 +573,8 @@ def test_ResBlock():
     # After temporal_window_size inputs it also produces precise computation
     torch.allclose(target[:, :, 3], outputs[3 + shift], atol=1e-9)
 
-    # Forward3d also works as expected
-    outputs2 = rtrans.forward3d(example_clip)
+    # forward_regular also works as expected
+    outputs2 = rtrans.forward_regular(example_clip)
     assert torch.allclose(target, outputs2)
 
 
@@ -624,7 +624,7 @@ def test_CoX3DTransform():
     rtrans.eval()  # This has a major effect on BatchNorm result
 
     # Forward 3D works like the original
-    output3d = rtrans.forward3d(example_clip)
+    output3d = rtrans.forward_regular(example_clip)
     assert torch.allclose(target, output3d)
 
     o = []
@@ -654,5 +654,5 @@ def test_CoX3DTransform():
     torch.allclose(target[:, :, 3], o[3 + shift], atol=1e-9)
 
     # Forward 3D works like the original
-    output3d = rtrans.forward3d(example_clip)
+    output3d = rtrans.forward_regular(example_clip)
     assert torch.allclose(target, output3d)

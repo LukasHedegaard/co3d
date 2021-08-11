@@ -155,7 +155,7 @@ def RecursivelyWindowPooled(cls: Pool2D) -> torch.nn.Module:  # noqa: C901
 
             return pooled_window, (new_buffer, new_index)
 
-        def forward3d(self, input: Tensor):
+        def forward_regular(self, input: Tensor):
             """If input.shape[2] == self.window_size, a global pooling along temporal dimension is performed
             Otherwise, the pooling is performed per frame
             """
@@ -173,7 +173,7 @@ def RecursivelyWindowPooled(cls: Pool2D) -> torch.nn.Module:  # noqa: C901
                 return torch.tensor([])
 
             if input.shape[2] == self.window_size:
-                # In order to be compatible with downstream forward3d, select only last frame
+                # In order to be compatible with downstream forward_regular, select only last frame
                 # This corrsponds to the regular global pool
                 return outs[-1].unsqueeze(2)
 

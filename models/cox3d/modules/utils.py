@@ -22,7 +22,7 @@ def unsqueezed(instance: Module, dim: int = 2):
 
         return call
 
-    instance.forward3d = instance.forward
+    instance.forward_regular = instance.forward
     instance.forward = decorator(instance.forward)
 
     return instance

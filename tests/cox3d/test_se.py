@@ -26,7 +26,7 @@ def test_se_block():
     assert torch.allclose(target1[:, :, 3], output1)
 
     # Clip
-    output2 = rse.forward3d(example_input)
+    output2 = rse.forward_regular(example_input)
     assert torch.allclose(target1, output2)
 
     # After initialising with whole clip, next frame works as expected

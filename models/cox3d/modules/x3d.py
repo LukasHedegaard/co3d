@@ -168,10 +168,10 @@ class CoX3DTransform(torch.nn.Module):
             x = block(x)
         return x
 
-    def forward3d(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_regular(self, x: torch.Tensor) -> torch.Tensor:
         for block in self.children():
-            if hasattr(block, "forward3d"):
-                x = block.forward3d(x)
+            if hasattr(block, "forward_regular"):
+                x = block.forward_regular(x)
             else:
                 x = block.forward(x)
         return x
@@ -293,12 +293,12 @@ class ReResBlock(torch.nn.Module):
         output = self.relu(output)
         return output
 
-    def forward3d(self, x):
-        f_x = self.branch2.forward3d(x)
+    def forward_regular(self, x):
+        f_x = self.branch2.forward_regular(x)
         if self.training and self._drop_connect_rate > 0.0:
             f_x = self._drop_connect(f_x, self._drop_connect_rate)
         if hasattr(self, "branch1"):
-            x = self.branch1_bn.forward3d(self.branch1.forward3d(x)) + f_x
+            x = self.branch1_bn.forward_regular(self.branch1.forward_regular(x)) + f_x
         else:
             x = x + f_x
         x = self.relu(x)
@@ -517,13 +517,13 @@ class ReResStage(torch.nn.Module):
 
         return output
 
-    def forward3d(self, inputs):
+    def forward_regular(self, inputs):
         output = []
         for pathway in range(self.num_pathways):
             x = inputs[pathway]
             for i in range(self.num_blocks[pathway]):
                 m = getattr(self, "pathway{}_res{}".format(pathway, i))
-                x = m.forward3d(x)
+                x = m.forward_regular(x)
             output.append(x)
 
         return output
@@ -693,18 +693,18 @@ class CoX3DHead(torch.nn.Module):
         x = x.view(x.shape[0], -1)
         return x
 
-    def forward3d(self, inputs):
+    def forward_regular(self, inputs):
         # In its current design the X3D head is only useable for a single
         # pathway input.
         assert len(inputs) == 1, "Input tensor does not contain 1 pathway"
-        x = self.conv_5.forward3d(inputs[0])
-        x = self.conv_5_bn.forward3d(x)
+        x = self.conv_5.forward_regular(inputs[0])
+        x = self.conv_5_bn.forward_regular(x)
         x = self.conv_5_relu(x)
-        x = self.avg_pool.forward3d(x)
+        x = self.avg_pool.forward_regular(x)
 
-        x = self.lin_5.forward3d(x)
+        x = self.lin_5.forward_regular(x)
         if self.bn_lin5_on:
-            x = self.lin_5_bn.forward3d(x)
+            x = self.lin_5_bn.forward_regular(x)
         x = self.lin_5_relu(x)
 
         # (N, C, T, H, W) -> (N, T, H, W, C).
@@ -719,7 +719,7 @@ class CoX3DHead(torch.nn.Module):
 
         # Performs fully convlutional inference.
         if not self.training:
-            x = self.act.forward3d(x)
+            x = self.act.forward_regular(x)
             x = x.mean([1, 2, 3])
 
         x = x.view(x.shape[0], -1)
@@ -815,10 +815,10 @@ class CoX3DStem(torch.nn.Module):
         x = self.relu(x)
         return x
 
-    def forward3d(self, x):
-        x = self.conv_xy.forward3d(x)
-        x = self.conv.forward3d(x)
-        x = self.bn.forward3d(x)
+    def forward_regular(self, x):
+        x = self.conv_xy.forward_regular(x)
+        x = self.conv.forward_regular(x)
+        x = self.bn.forward_regular(x)
         x = self.relu(x)
         return x
 
@@ -923,13 +923,13 @@ class ReVideoModelStem(torch.nn.Module):
             x[pathway] = m(x[pathway])
         return x
 
-    def forward3d(self, x):
+    def forward_regular(self, x):
         assert (
             len(x) == self.num_pathways
         ), "Input tensor does not contain {} pathway".format(self.num_pathways)
         for pathway in range(len(x)):
             m = getattr(self, "pathway{}_stem".format(pathway))
-            x[pathway] = m.forward3d(x[pathway])
+            x[pathway] = m.forward_regular(x[pathway])
         return x
 
 
@@ -1073,12 +1073,12 @@ class CoX3D(torch.nn.Module):
             x = module(x)
         return x
 
-    def forward3d(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_regular(self, x: torch.Tensor) -> torch.Tensor:
         # The original slowfast code was set up to use multiple paths, wrap the input
         x = [x]  # type:ignore
         for module in self.children():
-            if hasattr(module, "forward3d"):
-                x = module.forward3d(x)
+            if hasattr(module, "forward_regular"):
+                x = module.forward_regular(x)
             else:
                 x = module(x)
         return x

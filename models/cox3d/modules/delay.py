@@ -53,11 +53,11 @@ class Delay(torch.nn.Module):
         else:
             return None
 
-    def forward3d(self, input: Tensor) -> Tensor:
+    def forward_regular(self, input: Tensor) -> Tensor:
         # Pass into delay line, but discard output
         self.forward(input)
 
-        # No delay during forward3d
+        # No delay during forward_regular
         return input
 
     def forward(self, input: Tensor) -> Tensor:

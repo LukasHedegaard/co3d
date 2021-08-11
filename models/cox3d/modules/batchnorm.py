@@ -137,7 +137,7 @@ def convert_batchnorm3d(instance: BatchNorm3d, *args, **kwargs):
 
 #         return output, next_state
 
-#     def forward3d(self, input: Tensor):
+#     def forward_regular(self, input: Tensor):
 #         assert (
 #             len(input.shape) == 5
 #         ), "A tensor of size B,C,T,H,W should be passed as input."
