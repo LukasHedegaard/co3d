@@ -175,7 +175,7 @@ class CoX3DTransform(torch.nn.Module):
         return x
 
 
-class ReResBlock(torch.nn.Module):
+class CoResBlock(torch.nn.Module):
     """
     Residual block.
     """
@@ -230,7 +230,7 @@ class ReResBlock(torch.nn.Module):
             drop_connect_rate (float): basic rate at which blocks are dropped,
                 linearly increases from input to output blocks.
         """
-        super(ReResBlock, self).__init__()
+        super(CoResBlock, self).__init__()
         self._inplace_relu = inplace_relu
         self._eps = eps
         self._bn_mmt = bn_mmt
@@ -303,7 +303,7 @@ class ReResBlock(torch.nn.Module):
         return x
 
 
-class ReResStage(torch.nn.Module):
+class CoResStage(torch.nn.Module):
     """
     Stage of 3D ResNet. It expects to have one or more tensors as input for
         single pathway (C2D, I3D, Slow), and multi-pathway (SlowFast) cases.
@@ -382,7 +382,7 @@ class ReResStage(torch.nn.Module):
             drop_connect_rate (float): basic rate at which blocks are dropped,
                 linearly increases from input to output blocks.
         """
-        super(ReResStage, self).__init__()
+        super(CoResStage, self).__init__()
         assert trans_func_name == "x3d_transform"
         assert nonlocal_inds == [[]], "Nonlocal network not supported currently."
         assert all(
@@ -456,7 +456,7 @@ class ReResStage(torch.nn.Module):
         for pathway in range(self.num_pathways):
             for i in range(self.num_blocks[pathway]):
                 # Construct the block.
-                res_block = ReResBlock(
+                res_block = CoResBlock(
                     dim_in[pathway] if i == 0 else dim_out[pathway],
                     dim_out[pathway],
                     self.temp_kernel_sizes[pathway][i],
@@ -1025,7 +1025,7 @@ class CoX3D(torch.nn.Module):
             n_rep = _round_repeats(block[0], d_mul)
             prefix = "s{}".format(stage + 2)  # start w res2 to follow convention
 
-            s = ReResStage(
+            s = CoResStage(
                 dim_in=[dim_in],
                 dim_out=[dim_out],
                 dim_inner=[dim_inner],

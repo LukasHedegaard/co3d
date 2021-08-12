@@ -16,8 +16,8 @@ from models.cox3d.modules.x3d import (
     CoX3D,
     CoX3DHead,
     CoX3DTransform,
-    ReResBlock,
-    ReResStage,
+    CoResBlock,
+    CoResStage,
     ReVideoModelStem,
 )
 from models.x3d.head_helper import X3DHead
@@ -42,7 +42,7 @@ next_example_clip = torch.stack(
 
 def download_weights(
     url="https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_xs.pyth",
-    save_dir=Path(Path(__file__).parent / "downloads"),
+    save_dir=Path(__file__).parent / "downloads",
 ):
     save_dir.mkdir(exist_ok=True)
 
@@ -59,7 +59,7 @@ def download_weights(
     return weights_path
 
 
-def boring_video(image_size=160, save_dir=Path(Path(__file__).parent / "downloads")):
+def boring_video(image_size=160, save_dir=Path(__file__).parent / "downloads"):
     save_dir.mkdir(exist_ok=True)
 
     # Download image
@@ -235,7 +235,7 @@ def test_VideoModelStem():
         stem_func_name="x3d_stem",
     )
 
-    rtrans = ReVideoModelStem(
+    cotrans = ReVideoModelStem(
         dim_in=[2],
         dim_out=[2],
         kernel=[[5, 3, 3]],
@@ -245,11 +245,11 @@ def test_VideoModelStem():
         stem_func_name="x3d_stem",
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
+    cotrans.load_state_dict(trans.state_dict())
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     trans.eval()
-    rtrans.eval()
+    cotrans.eval()
 
     # Forward through models
     target = trans([example_clip])[0]
@@ -257,19 +257,19 @@ def test_VideoModelStem():
     outputs = []
     # Manual zero pad (due to padding=1 in trans.b Conv3d)
     zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
     for i in range(example_clip.shape[2]):
-        outputs.append(rtrans.forward([example_clip[:, :, i]])[0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
+        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
 
     # For debugging:
-    close = []
-    for t in range(target.shape[2]):
-        for i in range(len(outputs)):
-            if torch.allclose(target[:, :, t], outputs[i], atol=5e-4):
-                close.append(f"t = {t}, o = {i}")
+    # close = []
+    # for t in range(target.shape[2]):
+    #     for i in range(len(outputs)):
+    #         if torch.allclose(target[:, :, t], outputs[i], atol=5e-4):
+    #             close.append(f"t = {t}, o = {i}")
 
     shift = 4  # kernel[0] - 1
 
@@ -277,7 +277,7 @@ def test_VideoModelStem():
         assert torch.allclose(target[:, :, t], outputs[t + shift])
 
     # forward_regular also works
-    outputs2 = rtrans.forward_regular([example_clip])[0]
+    outputs2 = cotrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -293,7 +293,7 @@ def test_CoX3DHead():
         bn_lin5_on=False,
     )
 
-    rtrans = CoX3DHead(
+    cotrans = CoX3DHead(
         dim_in=2,
         dim_inner=5,
         dim_out=3,
@@ -305,18 +305,18 @@ def test_CoX3DHead():
         temporal_window_size=4,
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
+    cotrans.load_state_dict(trans.state_dict())
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     trans.eval()
-    rtrans.eval()
+    cotrans.eval()
 
     # Forward through models
     target = trans([example_clip])[0]
 
     outputs = []
     for i in range(example_clip.shape[2]):
-        outputs.append(rtrans.forward([example_clip[:, :, i]]))
+        outputs.append(cotrans.forward([example_clip[:, :, i]]))
 
     # For debugging:
     # close = []
@@ -327,7 +327,7 @@ def test_CoX3DHead():
     assert torch.allclose(target, outputs[3])
 
     # forward_regular also works
-    outputs2 = rtrans.forward_regular([example_clip])[0]
+    outputs2 = cotrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -354,7 +354,7 @@ def test_ResStage_multi():
     )
 
     # Converted block
-    rtrans = ReResStage(
+    cotrans = CoResStage(
         dim_in=[2],
         dim_out=[2],
         dim_inner=[5],
@@ -375,11 +375,11 @@ def test_ResStage_multi():
         temporal_window_size=example_clip.shape[2],
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
+    cotrans.load_state_dict(trans.state_dict())
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     trans.eval()
-    rtrans.eval()
+    cotrans.eval()
 
     # Forward through models
     target = trans([example_clip])[0]
@@ -387,12 +387,12 @@ def test_ResStage_multi():
     outputs = []
     # Manual zero pad (due to padding=1 in trans.b Conv3d)
     zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(rtrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
     for i in range(example_clip.shape[2]):
-        outputs.append(rtrans.forward([example_clip[:, :, i]])[0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
+        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
 
     # For debugging:
     close = []
@@ -409,7 +409,7 @@ def test_ResStage_multi():
         assert torch.allclose(target[:, :, t], outputs[t + shift], atol=5e-4)
 
     # forward_regular also works
-    outputs2 = rtrans.forward_regular([example_clip])[0]
+    outputs2 = cotrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -436,7 +436,7 @@ def test_ResStage_single():
     )
 
     # Converted block
-    rtrans = ReResStage(
+    cotrans = CoResStage(
         dim_in=[2],
         dim_out=[2],
         dim_inner=[5],
@@ -457,11 +457,11 @@ def test_ResStage_single():
         temporal_window_size=example_clip.shape[2],
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
+    cotrans.load_state_dict(trans.state_dict())
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     trans.eval()
-    rtrans.eval()
+    cotrans.eval()
 
     # Forward through models
     target = trans([example_clip])[0]
@@ -469,12 +469,12 @@ def test_ResStage_single():
     outputs = []
     # Manual zero pad (due to padding=1 in trans.b Conv3d)
     zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(rtrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
     for i in range(example_clip.shape[2]):
-        outputs.append(rtrans.forward([example_clip[:, :, i]])[0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
-    outputs.append(rtrans.forward([zeros])[0])
+        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
+    outputs.append(cotrans.forward([zeros])[0])
 
     # For debugging:
     # close = []
@@ -494,7 +494,7 @@ def test_ResStage_single():
     torch.allclose(target[:, :, 3], outputs[3 + shift], atol=1e-9)
 
     # forward_regular also works
-    outputs2 = rtrans.forward_regular([example_clip])[0]
+    outputs2 = cotrans.forward_regular([example_clip])[0]
     assert torch.allclose(target, outputs2)
 
 
@@ -519,7 +519,7 @@ def test_ResBlock():
     )
 
     # Converted block
-    rtrans = ReResBlock(
+    cotrans = CoResBlock(
         dim_in=2,
         dim_out=2,
         temp_kernel_size=3,
@@ -538,11 +538,11 @@ def test_ResBlock():
         temporal_window_size=example_clip.shape[2],
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
+    cotrans.load_state_dict(trans.state_dict())
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     trans.eval()
-    rtrans.eval()
+    cotrans.eval()
 
     # Forward through models
     target = trans(example_clip)
@@ -550,12 +550,12 @@ def test_ResBlock():
     outputs = []
     # Manual zero pad (due to padding=1 in trans.b Conv3d)
     zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(rtrans.forward(zeros))
+    outputs.append(cotrans.forward(zeros))
     for i in range(example_clip.shape[2]):
-        outputs.append(rtrans.forward(example_clip[:, :, i]))
-    outputs.append(rtrans.forward(zeros))
-    outputs.append(rtrans.forward(zeros))
-    outputs.append(rtrans.forward(zeros))
+        outputs.append(cotrans.forward(example_clip[:, :, i]))
+    outputs.append(cotrans.forward(zeros))
+    outputs.append(cotrans.forward(zeros))
+    outputs.append(cotrans.forward(zeros))
 
     # For debugging:
     # close = []
@@ -574,7 +574,7 @@ def test_ResBlock():
     torch.allclose(target[:, :, 3], outputs[3 + shift], atol=1e-9)
 
     # forward_regular also works as expected
-    outputs2 = rtrans.forward_regular(example_clip)
+    outputs2 = cotrans.forward_regular(example_clip)
     assert torch.allclose(target, outputs2)
 
 
@@ -601,7 +601,7 @@ def test_CoX3DTransform():
     target = trans(example_clip)
 
     # Recurrent block
-    rtrans = CoX3DTransform(
+    cotrans = CoX3DTransform(
         dim_in=2,
         dim_out=2,
         temp_kernel_size=3,
@@ -620,20 +620,20 @@ def test_CoX3DTransform():
         temporal_window_size=example_clip.shape[2],
         temporal_fill="zeros",
     )
-    rtrans.load_state_dict(trans.state_dict())
-    rtrans.eval()  # This has a major effect on BatchNorm result
+    cotrans.load_state_dict(trans.state_dict())
+    cotrans.eval()  # This has a major effect on BatchNorm result
 
     # Forward 3D works like the original
-    output3d = rtrans.forward_regular(example_clip)
+    output3d = cotrans.forward_regular(example_clip)
     assert torch.allclose(target, output3d)
 
     o = []
     # Manual zero pad (due to padding=1 in Conv3d)
     zeros = torch.zeros_like(example_clip[:, :, 0])
-    o.append(rtrans.forward(zeros))
+    o.append(cotrans.forward(zeros))
     for i in range(example_clip.shape[2]):
-        o.append(rtrans.forward(example_clip[:, :, i]))
-    o.append(rtrans.forward(zeros))
+        o.append(cotrans.forward(example_clip[:, :, i]))
+    o.append(cotrans.forward(zeros))
 
     # For debugging:
     # close = []
@@ -654,5 +654,5 @@ def test_CoX3DTransform():
     torch.allclose(target[:, :, 3], o[3 + shift], atol=1e-9)
 
     # Forward 3D works like the original
-    output3d = rtrans.forward_regular(example_clip)
+    output3d = cotrans.forward_regular(example_clip)
     assert torch.allclose(target, output3d)
