@@ -1,3 +1,4 @@
 ride~=0.4
 torchvision
 av
+continual-inference
