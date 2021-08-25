@@ -1,4 +1,5 @@
 import torch
+import continual as co
 
 
 class Swish(torch.nn.Module):
@@ -25,3 +26,6 @@ class SwishEfficient(torch.autograd.Function):
         x = ctx.saved_variables[0]
         sigmoid_x = torch.sigmoid(x)
         return grad_output * (sigmoid_x * (1 + x * (1 - sigmoid_x)))
+
+
+co.convert.register(Swish, co.forward_stepping(Swish))
