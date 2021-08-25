@@ -132,7 +132,7 @@ python models/slowfast/main.py --help
 @article{hedegaard2021continual,
   title={Continual 3D Convolutional Neural Networks for Real-time Processing of Videos},
   author={Lukas Hedegaard and Alexandros Iosifidis},
-  journal={journal={preprint, arXiv:2106.00050}},
+  journal={preprint, arXiv:2106.00050},
   year={2021}
 }
 ```
