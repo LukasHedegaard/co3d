@@ -1,16 +1,146 @@
+from collections import OrderedDict
 import math
-
 import torch
-from continual import AdaptiveAvgPoolCo3d, AvgPoolCo3d, ConvCo3d, Delay, continual
-from continual.utils import FillMode
+from torch import nn
+import continual as co
+from continual import PaddingMode
 
 from .activation import Swish
 from .se import CoSe
 
 
-class CoX3DTransform(torch.nn.Module):
+def CoX3DTransform(
+    dim_in: int,
+    dim_out: int,
+    temp_kernel_size: int,
+    stride: int,
+    dim_inner: int,
+    num_groups: int,
+    stride_1x1=False,
+    inplace_relu=True,
+    eps=1e-5,
+    bn_mmt=0.1,
+    dilation=1,
+    norm_module=torch.nn.BatchNorm3d,
+    se_ratio=0.0625,
+    swish_inner=True,
+    block_idx=0,
+    temporal_window_size: int = 4,
+    temporal_fill: PaddingMode = "replicate",
+    se_scope="frame",  # "frame" or "clip"
+):
     """
-    Recursive X3D transformation: 1x1x1, Tx3x3 (channelwise, num_groups=dim_in), 1x1x1,
+    Args:
+        dim_in (int): the channel dimensions of the input.
+        dim_out (int): the channel dimension of the output.
+        temp_kernel_size (int): the temporal kernel sizes of the middle
+            convolution in the bottleneck.
+        stride (int): the stride of the bottleneck.
+        dim_inner (int): the inner dimension of the block.
+        num_groups (int): number of groups for the convolution. num_groups=1
+            is for standard ResNet like networks, and num_groups>1 is for
+            ResNeXt like networks.
+        stride_1x1 (bool): if True, apply stride to 1x1 conv, otherwise
+            apply stride to the 3x3 conv.
+        inplace_relu (bool): if True, calculate the relu on the original
+            input without allocating new memory.
+        eps (float): epsilon for batch norm.
+        bn_mmt (float): momentum for batch norm. Noted that BN momentum in
+            PyTorch = 1 - BN momentum in Caffe2.
+        dilation (int): size of dilation.
+        norm_module (torch.nn.Module): torch.nn.Module for the normalization layer. The
+            default is torch.nn.BatchNorm3d.
+        se_ratio (float): if > 0, apply SE to the Tx3x3 conv, with the SE
+            channel dimensionality being se_ratio times the Tx3x3 conv dim.
+        swish_inner (bool): if True, apply swish to the Tx3x3 conv, otherwise
+            apply ReLU to the Tx3x3 conv.
+    """
+    (str1x1, str3x3) = (stride, 1) if stride_1x1 else (1, stride)
+
+    a = co.Conv3d(
+        dim_in,
+        dim_inner,
+        kernel_size=(1, 1, 1),
+        stride=(1, str1x1, str1x1),
+        padding=(0, 0, 0),
+        bias=False,
+    )
+
+    a_bn = co.forward_stepping(
+        norm_module(num_features=dim_inner, eps=eps, momentum=bn_mmt)
+    )
+
+    a_relu = torch.nn.ReLU(inplace=inplace_relu)
+
+    # Tx3x3, BN, ReLU.
+    b = co.Conv3d(
+        dim_inner,
+        dim_inner,
+        kernel_size=(temp_kernel_size, 3, 3),
+        stride=(1, str3x3, str3x3),
+        padding=(int(temp_kernel_size // 2), dilation, dilation),
+        groups=num_groups,
+        bias=False,
+        dilation=(1, dilation, dilation),
+        temporal_fill=temporal_fill,
+    )
+    b.forward(torch.ones((1, 5, 10, 10, 10), dtype=torch.float))
+
+    b_bn = co.forward_stepping(
+        norm_module(num_features=dim_inner, eps=eps, momentum=bn_mmt)
+    )
+
+    # Apply SE attention or not
+    use_se = True if (block_idx + 1) % 2 else False
+    if se_ratio > 0.0 and use_se:
+        se = CoSe(
+            temporal_window_size,
+            dim_in=dim_inner,
+            ratio=se_ratio,
+            temporal_fill=temporal_fill,
+            scope=se_scope,
+        )
+
+    b_relu = co.forward_stepping(
+        Swish()  # nn.SELU is the same as Swish
+        if swish_inner
+        else nn.ReLU(inplace=inplace_relu)
+    )
+
+    # 1x1x1, BN.
+    c = co.Conv3d(
+        dim_inner,
+        dim_out,
+        kernel_size=(1, 1, 1),
+        stride=(1, 1, 1),
+        padding=(0, 0, 0),
+        bias=False,
+    )
+    c_bn = co.forward_stepping(
+        norm_module(num_features=dim_out, eps=eps, momentum=bn_mmt)
+    )
+    c_bn.transform_final_bn = True
+
+    return co.Sequential(
+        OrderedDict(
+            [
+                ("a", a),
+                ("a_bn", a_bn),
+                ("a_relu", a_relu),
+                ("b", b),
+                ("b_bn", b_bn),
+                *([("se", se)] if use_se else []),
+                ("b_relu", b_relu),
+                ("c", c),
+                ("c_bn", c_bn),
+            ]
+        )
+    )
+
+
+class OldCoX3DTransform(torch.nn.Module):
+    """
+    Continual X3D transformation: 1x1x1, Tx3x3 (channelwise, num_groups=dim_in), 1x1x1,
         augmented with (optional) SE (squeeze-excitation) on the 3x3x3 output.
         T is the temporal kernel size (defaulting to 3)
     """
@@ -33,7 +163,8 @@ class CoX3DTransform(torch.nn.Module):
         swish_inner=True,
         block_idx=0,
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
+        se_scope="frame",  # "frame" or "clip"
     ):
         """
         Args:
@@ -80,6 +211,7 @@ class CoX3DTransform(torch.nn.Module):
             norm_module,
             temporal_window_size,
             temporal_fill,
+            se_scope,
         )
 
     def _construct(
@@ -93,11 +225,12 @@ class CoX3DTransform(torch.nn.Module):
         norm_module,
         temporal_window_size,
         temporal_fill="replicate",
+        se_scope="frame",
     ):
         (str1x1, str3x3) = (stride, 1) if self._stride_1x1 else (1, stride)
 
         # 1x1x1, BN, ReLU.
-        self.a = continual(
+        self.a = co.forward_stepping(
             torch.nn.Conv3d(
                 dim_in,
                 dim_inner,
@@ -107,14 +240,14 @@ class CoX3DTransform(torch.nn.Module):
                 bias=False,
             )
         )
-        self.a_bn = continual(
+        self.a_bn = co.forward_stepping(
             norm_module(num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
         )
 
         self.a_relu = torch.nn.ReLU(inplace=self._inplace_relu)
 
         # Tx3x3, BN, ReLU.
-        self.b = ConvCo3d(
+        self.b = co.Conv3d(
             dim_inner,
             dim_inner,
             kernel_size=(self.temp_kernel_size, 3, 3),
@@ -126,7 +259,7 @@ class CoX3DTransform(torch.nn.Module):
             temporal_fill=temporal_fill,
         )
 
-        self.b_bn = continual(
+        self.b_bn = co.forward_stepping(
             norm_module(num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
         )
 
@@ -138,6 +271,7 @@ class CoX3DTransform(torch.nn.Module):
                 dim_in=dim_inner,
                 ratio=self._se_ratio,
                 temporal_fill=temporal_fill,
+                scope=se_scope,
             )
 
         if self._swish_inner:
@@ -146,7 +280,7 @@ class CoX3DTransform(torch.nn.Module):
             self.b_relu = torch.nn.ReLU(inplace=self._inplace_relu)
 
         # 1x1x1, BN.
-        self.c = continual(
+        self.c = co.forward_stepping(
             torch.nn.Conv3d(
                 dim_inner,
                 dim_out,
@@ -156,20 +290,25 @@ class CoX3DTransform(torch.nn.Module):
                 bias=False,
             )
         )
-        self.c_bn = continual(
+        self.c_bn = co.forward_stepping(
             norm_module(num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
         )
         self.c_bn.transform_final_bn = True
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         for block in self.children():
             x = block(x)
         return x
 
-    def forward_regular(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_step(self, x: torch.Tensor) -> torch.Tensor:
         for block in self.children():
-            if hasattr(block, "forward_regular"):
-                x = block.forward_regular(x)
+            x = block(x)
+        return x
+
+    def forward_steps(self, x: torch.Tensor) -> torch.Tensor:
+        for block in self.children():
+            if hasattr(block, "forward_steps"):
+                x = block.forward_steps(x)
             else:
                 x = block.forward(x)
         return x
@@ -198,7 +337,8 @@ class CoResBlock(torch.nn.Module):
         block_idx=0,
         drop_connect_rate=0.0,
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
+        se_scope="frame",  # "clip" or "frame"
     ):
         """
         ResBlock class constructs redisual blocks. More details can be found in:
@@ -237,7 +377,7 @@ class CoResBlock(torch.nn.Module):
         self._drop_connect_rate = drop_connect_rate
         # Use skip connection with projection if dim or res change.
         if (dim_in != dim_out) or (stride != 1):
-            self.branch1 = continual(
+            self.branch1 = co.forward_stepping(
                 torch.nn.Conv3d(
                     dim_in,
                     dim_out,
@@ -248,7 +388,7 @@ class CoResBlock(torch.nn.Module):
                     dilation=1,
                 )
             )
-            self.branch1_bn = continual(
+            self.branch1_bn = co.forward_stepping(
                 norm_module(num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
             )
         self.branch2 = trans_func(
@@ -265,10 +405,12 @@ class CoResBlock(torch.nn.Module):
             block_idx=block_idx,
             temporal_window_size=temporal_window_size,
             temporal_fill=temporal_fill,
+            se_scope=se_scope,
         )
         self.relu = torch.nn.ReLU(self._inplace_relu)
         # temporal_fill="replicate" works much better than "zeros" here
-        self.delay = Delay(temp_kernel_size - 1, temporal_fill)
+        self.delay = temp_kernel_size - 1
+        self.residual = co.Delay(temp_kernel_size - 1, temporal_fill)
 
     def _drop_connect(self, x, drop_ratio):
         """Apply dropconnect to x"""
@@ -280,7 +422,7 @@ class CoResBlock(torch.nn.Module):
         return x
 
     def forward(self, x):
-        delayed_x = self.delay(x)
+        delayed_x = self.residual(x)
         f_x = self.branch2(x)
         if self.training and self._drop_connect_rate > 0.0:
             f_x = self._drop_connect(f_x, self._drop_connect_rate)
@@ -291,12 +433,12 @@ class CoResBlock(torch.nn.Module):
         output = self.relu(output)
         return output
 
-    def forward_regular(self, x):
-        f_x = self.branch2.forward_regular(x)
+    def forward_steps(self, x):
+        f_x = self.branch2.forward_steps(x)
         if self.training and self._drop_connect_rate > 0.0:
             f_x = self._drop_connect(f_x, self._drop_connect_rate)
         if hasattr(self, "branch1"):
-            x = self.branch1_bn.forward_regular(self.branch1.forward_regular(x)) + f_x
+            x = self.branch1_bn.forward_steps(self.branch1.forward_steps(x)) + f_x
         else:
             x = x + f_x
         x = self.relu(x)
@@ -335,7 +477,8 @@ class CoResStage(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         drop_connect_rate=0.0,
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
+        se_scope="frame",
     ):
         """
         The `__init__` method of any subclass should also contain these arguments.
@@ -433,6 +576,7 @@ class CoResStage(torch.nn.Module):
             norm_module,
             temporal_window_size,
             temporal_fill,
+            se_scope,
         )
 
     def _construct(
@@ -452,6 +596,7 @@ class CoResStage(torch.nn.Module):
         norm_module,
         temporal_window_size,
         temporal_fill,
+        se_scope,
     ):
         for pathway in range(self.num_pathways):
             for i in range(self.num_blocks[pathway]):
@@ -472,6 +617,7 @@ class CoResStage(torch.nn.Module):
                     drop_connect_rate=self._drop_connect_rate,
                     temporal_window_size=temporal_window_size,
                     temporal_fill=temporal_fill,
+                    se_scope=se_scope,
                 )
                 self.add_module("pathway{}_res{}".format(pathway, i), res_block)
                 # if i in nonlocal_inds[pathway]:
@@ -515,13 +661,13 @@ class CoResStage(torch.nn.Module):
 
         return output
 
-    def forward_regular(self, inputs):
+    def forward_steps(self, inputs):
         output = []
         for pathway in range(self.num_pathways):
             x = inputs[pathway]
             for i in range(self.num_blocks[pathway]):
                 m = getattr(self, "pathway{}_res{}".format(pathway, i))
-                x = m.forward_regular(x)
+                x = m.forward_steps(x)
             output.append(x)
 
         return output
@@ -551,7 +697,7 @@ class CoX3DHead(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         bn_lin5_on=False,
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -605,7 +751,7 @@ class CoX3DHead(torch.nn.Module):
         temporal_fill,
     ):
 
-        self.conv_5 = continual(
+        self.conv_5 = co.forward_stepping(
             torch.nn.Conv3d(
                 dim_in,
                 dim_inner,
@@ -615,19 +761,19 @@ class CoX3DHead(torch.nn.Module):
                 bias=False,
             )
         )
-        self.conv_5_bn = continual(
+        self.conv_5_bn = co.forward_stepping(
             norm_module(num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt)
         )
         self.conv_5_relu = torch.nn.ReLU(self.inplace_relu)
 
         if self.pool_size is None:
-            self.avg_pool = AdaptiveAvgPoolCo3d(1, temporal_fill, (1, 1))
+            self.avg_pool = co.AdaptiveAvgPool3d(1, temporal_fill, (1, 1))
         else:
-            self.avg_pool = AvgPoolCo3d(
+            self.avg_pool = co.AvgPool3d(
                 self.pool_size[0], temporal_fill, 1, self.pool_size[1:], stride=1
             )
 
-        self.lin_5 = continual(
+        self.lin_5 = co.forward_stepping(
             torch.nn.Conv3d(
                 dim_inner,
                 dim_out,
@@ -638,7 +784,7 @@ class CoX3DHead(torch.nn.Module):
             )
         )
         if self.bn_lin5_on:
-            self.lin_5_bn = continual(
+            self.lin_5_bn = co.forward_stepping(
                 norm_module(num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
             )
         self.lin_5_relu = torch.nn.ReLU(self.inplace_relu)
@@ -651,7 +797,7 @@ class CoX3DHead(torch.nn.Module):
 
         # Softmax for evaluation and testing.
         if self.act_func == "softmax":
-            self.act = continual(torch.nn.Softmax(dim=4))
+            self.act = co.forward_stepping(torch.nn.Softmax(dim=4))
         elif self.act_func == "sigmoid":
             self.act = torch.nn.Sigmoid()
         else:
@@ -675,7 +821,7 @@ class CoX3DHead(torch.nn.Module):
 
         # (N, C, T, H, W) -> (N, T, H, W, C).
         # x = x.permute((0, 2, 3, 4, 1))
-        # Compatible with recursive conversion:
+        # Compatible with continual conversion:
         x = x.unsqueeze(-1).transpose(-1, 1).squeeze(1)
 
         # Perform dropout.
@@ -691,23 +837,23 @@ class CoX3DHead(torch.nn.Module):
         x = x.view(x.shape[0], -1)
         return x
 
-    def forward_regular(self, inputs):
+    def forward_steps(self, inputs):
         # In its current design the X3D head is only useable for a single
         # pathway input.
         assert len(inputs) == 1, "Input tensor does not contain 1 pathway"
-        x = self.conv_5.forward_regular(inputs[0])
-        x = self.conv_5_bn.forward_regular(x)
+        x = self.conv_5.forward_steps(inputs[0])
+        x = self.conv_5_bn.forward_steps(x)
         x = self.conv_5_relu(x)
-        x = self.avg_pool.forward_regular(x)
+        x = self.avg_pool.forward_steps(x)
 
-        x = self.lin_5.forward_regular(x)
+        x = self.lin_5.forward_steps(x)
         if self.bn_lin5_on:
-            x = self.lin_5_bn.forward_regular(x)
+            x = self.lin_5_bn.forward_steps(x)
         x = self.lin_5_relu(x)
 
         # (N, C, T, H, W) -> (N, T, H, W, C).
         # x = x.permute((0, 2, 3, 4, 1))
-        # Compatible with recursive conversion:
+        # Compatible with continual conversion:
         x = x.unsqueeze(-1).transpose(-1, 1).squeeze(1)
 
         # Perform dropout.
@@ -717,7 +863,7 @@ class CoX3DHead(torch.nn.Module):
 
         # Performs fully convlutional inference.
         if not self.training:
-            x = self.act.forward_regular(x)
+            x = self.act.forward_steps(x)
             x = x.mean([1, 2, 3])
 
         x = x.view(x.shape[0], -1)
@@ -743,7 +889,7 @@ class CoX3DStem(torch.nn.Module):
         bn_mmt=0.1,
         norm_module=torch.nn.BatchNorm3d,
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
     ):
         """
         The `__init__` method of any subclass should also contain these arguments.
@@ -781,7 +927,7 @@ class CoX3DStem(torch.nn.Module):
         self._construct_stem(dim_in, dim_out, norm_module, temporal_fill)
 
     def _construct_stem(self, dim_in, dim_out, norm_module, temporal_fill):
-        self.conv_xy = continual(
+        self.conv_xy = co.forward_stepping(
             torch.nn.Conv3d(
                 dim_in,
                 dim_out,
@@ -791,7 +937,7 @@ class CoX3DStem(torch.nn.Module):
                 bias=False,
             )
         )
-        self.conv = ConvCo3d(
+        self.conv = co.Conv3d(
             dim_out,
             dim_out,
             kernel_size=(self.kernel[0], 1, 1),
@@ -801,7 +947,7 @@ class CoX3DStem(torch.nn.Module):
             groups=dim_out,
             temporal_fill=temporal_fill,
         )
-        self.bn = continual(
+        self.bn = co.forward_stepping(
             norm_module(num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
         )
         self.relu = torch.nn.ReLU(self.inplace_relu)
@@ -813,15 +959,15 @@ class CoX3DStem(torch.nn.Module):
         x = self.relu(x)
         return x
 
-    def forward_regular(self, x):
-        x = self.conv_xy.forward_regular(x)
-        x = self.conv.forward_regular(x)
-        x = self.bn.forward_regular(x)
+    def forward_steps(self, x):
+        x = self.conv_xy.forward_steps(x)
+        x = self.conv.forward_steps(x)
+        x = self.bn.forward_steps(x)
         x = self.relu(x)
         return x
 
 
-class ReVideoModelStem(torch.nn.Module):
+class CoVideoModelStem(torch.nn.Module):
     """
     Video 3D stem module. Provides stem operations of Conv, BN, ReLU, MaxPool
     on input data tensor for one or multiple pathways.
@@ -840,7 +986,7 @@ class ReVideoModelStem(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         stem_func_name="x3d_stem",
         temporal_window_size: int = 4,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -870,7 +1016,7 @@ class ReVideoModelStem(torch.nn.Module):
             stem_func_name (string): name of the the stem function applied on
                 input to the network.
         """
-        super(ReVideoModelStem, self).__init__()
+        super(CoVideoModelStem, self).__init__()
 
         assert (
             len(
@@ -921,13 +1067,13 @@ class ReVideoModelStem(torch.nn.Module):
             x[pathway] = m(x[pathway])
         return x
 
-    def forward_regular(self, x):
+    def forward_steps(self, x):
         assert (
             len(x) == self.num_pathways
         ), "Input tensor does not contain {} pathway".format(self.num_pathways)
         for pathway in range(len(x)):
             m = getattr(self, "pathway{}_stem".format(pathway))
-            x[pathway] = m.forward_regular(x[pathway])
+            x[pathway] = m.forward_steps(x[pathway])
         return x
 
 
@@ -960,7 +1106,8 @@ class CoX3D(torch.nn.Module):
         x3d_head_batchnorm: bool,
         x3d_fc_std_init: float,
         x3d_final_batchnorm_zero_init: bool,
-        temporal_fill: FillMode = "replicate",
+        temporal_fill: PaddingMode = "replicate",
+        se_scope="frame",
     ):
         torch.nn.Module.__init__(self)
         self.norm_module = torch.nn.BatchNorm3d  # Will be continual
@@ -1002,7 +1149,7 @@ class CoX3D(torch.nn.Module):
             [[3]],  # res5 temporal kernels.
         ]
 
-        self.s1 = ReVideoModelStem(
+        self.s1 = CoVideoModelStem(
             dim_in=[dim_in],
             dim_out=[dim_res1],
             kernel=[temp_kernel[0][0] + [3, 3]],
@@ -1045,6 +1192,7 @@ class CoX3D(torch.nn.Module):
                 drop_connect_rate=0.0,
                 temporal_window_size=frames_per_clip,
                 temporal_fill=temporal_fill,
+                se_scope=se_scope,
             )
             dim_in = dim_out
             self.add_module(prefix, s)
@@ -1071,12 +1219,12 @@ class CoX3D(torch.nn.Module):
             x = module(x)
         return x
 
-    def forward_regular(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_steps(self, x: torch.Tensor) -> torch.Tensor:
         # The original slowfast code was set up to use multiple paths, wrap the input
         x = [x]  # type:ignore
         for module in self.children():
-            if hasattr(module, "forward_regular"):
-                x = module.forward_regular(x)
+            if hasattr(module, "forward_steps"):
+                x = module.forward_steps(x)
             else:
                 x = module(x)
         return x
@@ -1126,7 +1274,7 @@ def init_weights(model, fc_init_std=0.01, zero_init_final_bn=True):
             every bottleneck.
     """
     for m in model.modules():
-        if isinstance(m, torch.nn.Conv3d) or isinstance(m, ConvCo3d):
+        if isinstance(m, torch.nn.Conv3d) or isinstance(m, co.Conv3d):
             """
             Follow the initialization method proposed in:
             {He, Kaiming, et al.
