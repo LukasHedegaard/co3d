@@ -1,5 +1,5 @@
-from continual import TensorPlaceholder
 import torch
+from continual import TensorPlaceholder
 
 from models.cox3d.modules.se import SE, CoSe, CoSeAlt
 
