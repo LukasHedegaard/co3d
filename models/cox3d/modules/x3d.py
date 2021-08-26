@@ -1,9 +1,10 @@
-from collections import OrderedDict
 import math
-import torch
-from torch import nn
+from collections import OrderedDict
+
 import continual as co
+import torch
 from continual import PaddingMode
+from torch import nn
 
 from .activation import Swish
 from .se import CoSe
@@ -314,7 +315,132 @@ class OldCoX3DTransform(torch.nn.Module):
         return x
 
 
-class CoResBlock(torch.nn.Module):
+def CoResBlock(
+    dim_in,
+    dim_out,
+    temp_kernel_size,
+    stride,
+    trans_func,
+    dim_inner,
+    num_groups=1,
+    stride_1x1=False,
+    inplace_relu=True,
+    eps=1e-5,
+    bn_mmt=0.1,
+    dilation=1,
+    norm_module=torch.nn.BatchNorm3d,
+    block_idx=0,
+    drop_connect_rate=0.0,
+    temporal_window_size: int = 4,
+    temporal_fill: PaddingMode = "replicate",
+    se_scope="frame",  # "clip" or "frame"
+):
+    """
+    ResBlock class constructs redisual blocks. More details can be found in:
+        Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+        "Deep residual learning for image recognition."
+        https://arxiv.org/abs/1512.03385
+    Args:
+        dim_in (int): the channel dimensions of the input.
+        dim_out (int): the channel dimension of the output.
+        temp_kernel_size (int): the temporal kernel sizes of the middle
+            convolution in the bottleneck.
+        stride (int): the stride of the bottleneck.
+        trans_func (string): transform function to be used to construct the
+            bottleneck.
+        dim_inner (int): the inner dimension of the block.
+        num_groups (int): number of groups for the convolution. num_groups=1
+            is for standard ResNet like networks, and num_groups>1 is for
+            ResNeXt like networks.
+        stride_1x1 (bool): if True, apply stride to 1x1 conv, otherwise
+            apply stride to the 3x3 conv.
+        inplace_relu (bool): calculate the relu on the original input
+            without allocating new memory.
+        eps (float): epsilon for batch norm.
+        bn_mmt (float): momentum for batch norm. Noted that BN momentum in
+            PyTorch = 1 - BN momentum in Caffe2.
+        dilation (int): size of dilation.
+        norm_module (torch.nn.Module): torch.nn.Module for the normalization layer. The
+            default is torch.nn.BatchNorm3d.
+        drop_connect_rate (float): basic rate at which blocks are dropped,
+            linearly increases from input to output blocks.
+    """
+    branch2 = trans_func(
+        dim_in,
+        dim_out,
+        temp_kernel_size,
+        stride,
+        dim_inner,
+        num_groups,
+        stride_1x1=stride_1x1,
+        inplace_relu=inplace_relu,
+        dilation=dilation,
+        norm_module=norm_module,
+        block_idx=block_idx,
+        temporal_window_size=temporal_window_size,
+        temporal_fill=temporal_fill,
+        se_scope=se_scope,
+    )
+
+    def _is_training(module: nn.Module) -> bool:
+        return module.training
+
+    def _drop_connect(x, drop_ratio):
+        """Apply dropconnect to x"""
+        keep_ratio = 1.0 - drop_ratio
+        mask = torch.empty([x.shape[0], 1, 1, 1], dtype=x.dtype, device=x.device)
+        mask.bernoulli_(keep_ratio)
+        x.div_(keep_ratio)
+        x.mul_(mask)
+        return x
+
+    if drop_connect_rate > 0:
+        drop = [("drop", co.Conditional(_is_training, co.Lambda(_drop_connect)))]
+    else:
+        drop = []
+
+    main_stream = co.Sequential(
+        OrderedDict(
+            [
+                ("branch2", branch2),
+                *drop,
+            ]
+        )
+    )
+
+    if (dim_in == dim_out) and (stride == 1):
+        residual_stream = co.Delay(main_stream.delay)
+    else:
+        residual_stream = co.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "branch1",
+                        co.Conv3d(
+                            dim_in,
+                            dim_out,
+                            kernel_size=1,
+                            stride=(1, stride, stride),
+                            padding=0,
+                            bias=False,
+                            dilation=1,
+                        ),
+                    ),
+                    (
+                        "branch1_bn",
+                        norm_module(num_features=dim_out, eps=eps, momentum=bn_mmt),
+                    ),
+                ]
+            )
+        )
+
+    return co.Sequential(
+        co.Parallel(residual_stream, main_stream, aggregation_fn="sum"),
+        nn.ReLU(),
+    )
+
+
+class OldCoResBlock(torch.nn.Module):
     """
     Residual block.
     """
