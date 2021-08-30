@@ -102,7 +102,7 @@ def CoSe(
                 ]
             )
         ),
-        aggregation_fn="mul",
+        reduce="mul",
     )
 
 

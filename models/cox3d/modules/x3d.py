@@ -435,7 +435,7 @@ def CoResBlock(
         )
 
     return co.Sequential(
-        co.Parallel(residual_stream, main_stream, aggregation_fn="sum"),
+        co.BroadcastReduce(residual_stream, main_stream, reduce="sum"),
         nn.ReLU(),
     )
 
@@ -571,7 +571,78 @@ class OldCoResBlock(torch.nn.Module):
         return x
 
 
-class CoResStage(torch.nn.Module):
+def CoResStage(
+    dim_in,
+    dim_out,
+    stride,
+    temp_kernel_sizes,
+    num_blocks,
+    dim_inner,
+    num_groups,
+    num_block_temp_kernel,
+    nonlocal_inds,
+    nonlocal_group,
+    nonlocal_pool,
+    dilation,
+    instantiation="softmax",
+    trans_func_name="x3d_transform",
+    stride_1x1=False,
+    inplace_relu=True,
+    norm_module=torch.nn.BatchNorm3d,
+    drop_connect_rate=0.0,
+    temporal_window_size: int = 4,
+    temporal_fill: PaddingMode = "replicate",
+    se_scope="frame",
+):
+    """
+    The `__init__` method of any subclass should also contain these arguments.
+    ResStage builds p streams, where p can be greater or equal to one.
+    Args:
+        dim_in (list): list of p the channel dimensions of the input.
+            Different channel dimensions control the input dimension of
+            different pathways.
+        dim_out (list): list of p the channel dimensions of the output.
+            Different channel dimensions control the input dimension of
+            different pathways.
+        temp_kernel_sizes (list): list of the p temporal kernel sizes of the
+            convolution in the bottleneck. Different temp_kernel_sizes
+            control different pathway.
+        stride (list): list of the p strides of the bottleneck. Different
+            stride control different pathway.
+        num_blocks (list): list of p numbers of blocks for each of the
+            pathway.
+        dim_inner (list): list of the p inner channel dimensions of the
+            input. Different channel dimensions control the input dimension
+            of different pathways.
+        num_groups (list): list of number of p groups for the convolution.
+            num_groups=1 is for standard ResNet like networks, and
+            num_groups>1 is for ResNeXt like networks.
+        num_block_temp_kernel (list): extent the temp_kernel_sizes to
+            num_block_temp_kernel blocks, then fill temporal kernel size
+            of 1 for the rest of the layers.
+        nonlocal_inds (list): If the tuple is empty, no nonlocal layer will
+            be added. If the tuple is not empty, add nonlocal layers after
+            the index-th block.
+        dilation (list): size of dilation for each pathway.
+        nonlocal_group (list): list of number of p nonlocal groups. Each
+            number controls how to fold temporal dimension to batch
+            dimension before applying nonlocal transformation.
+            https://github.com/facebookresearch/video-nonlocal-net.
+        instantiation (string): different instantiation for nonlocal layer.
+            Supports two different instantiation method:
+                "dot_product": normalizing correlation matrix with L2.
+                "softmax": normalizing correlation matrix with Softmax.
+        trans_func_name (string): name of the the transformation function apply
+            on the network.
+        norm_module (nn.Module): nn.Module for the normalization layer. The
+            default is nn.BatchNorm3d.
+        drop_connect_rate (float): basic rate at which blocks are dropped,
+            linearly increases from input to output blocks.
+    """
+    ...
+
+
+class OldCoResStage(torch.nn.Module):
     """
     Stage of 3D ResNet. It expects to have one or more tensors as input for
         single pathway (C2D, I3D, Slow), and multi-pathway (SlowFast) cases.
@@ -651,7 +722,7 @@ class CoResStage(torch.nn.Module):
             drop_connect_rate (float): basic rate at which blocks are dropped,
                 linearly increases from input to output blocks.
         """
-        super(CoResStage, self).__init__()
+        super(OldCoResStage, self).__init__()
         assert trans_func_name == "x3d_transform"
         assert nonlocal_inds == [[]], "Nonlocal network not supported currently."
         assert all(
