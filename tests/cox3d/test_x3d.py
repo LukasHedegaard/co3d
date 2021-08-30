@@ -429,6 +429,54 @@ def test_ResStage_multi():
     assert torch.allclose(lasts, target)
 
 
+def test_CoX3DHead():
+    trans = X3DHead(
+        dim_in=2,
+        dim_inner=5,
+        dim_out=3,
+        num_classes=3,
+        pool_size=(4, 4, 4),
+        dropout_rate=0.0,
+        act_func="softmax",
+        bn_lin5_on=False,
+    )
+
+    cotrans = CoX3DHead(
+        dim_in=2,
+        dim_inner=5,
+        dim_out=3,
+        num_classes=3,
+        pool_size=(4, 4, 4),
+        dropout_rate=0.0,
+        act_func="softmax",
+        bn_lin5_on=False,
+        temporal_window_size=4,
+        temporal_fill="zeros",
+    )
+    cotrans.load_state_dict(trans.state_dict())
+
+    # Training mode has large effect on BatchNorm result - test will fail otherwise
+    trans.eval()
+    cotrans.eval()
+
+    sample = torch.randn((1, 2, 4, 4, 4))
+
+    # Forward through models
+    target = trans.forward([sample])[0]  # needs to be packed due to multi-path support
+
+    # forward
+    output = cotrans.forward(sample)
+    assert torch.allclose(target, output)
+
+    # Broken up
+    cotrans.clean_state()
+    nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
+    assert isinstance(nothing, TensorPlaceholder)
+
+    lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
+    assert torch.allclose(lasts, target)
+
+
 example_clip = torch.normal(mean=torch.zeros(2 * 4 * 4 * 4)).reshape((1, 2, 4, 4, 4))
 next_example_frame = torch.normal(mean=torch.zeros(2 * 1 * 4 * 4)).reshape((1, 2, 4, 4))
 next_example_clip = torch.stack(
@@ -640,57 +688,6 @@ def test_VideoModelStem():
 
     for t in range(1, target.shape[2]):
         assert torch.allclose(target[:, :, t], outputs[t + shift])
-
-    # forward_steps also works
-    outputs2 = cotrans.forward_steps([example_clip])[0]
-    assert torch.allclose(target, outputs2)
-
-
-@pytest.mark.skip()
-def test_CoX3DHead():
-    trans = X3DHead(
-        dim_in=2,
-        dim_inner=5,
-        dim_out=3,
-        num_classes=3,
-        pool_size=(4, 4, 4),
-        dropout_rate=0.0,
-        act_func="softmax",
-        bn_lin5_on=False,
-    )
-
-    cotrans = CoX3DHead(
-        dim_in=2,
-        dim_inner=5,
-        dim_out=3,
-        num_classes=3,
-        pool_size=(4, 4, 4),
-        dropout_rate=0.0,
-        act_func="softmax",
-        bn_lin5_on=False,
-        temporal_window_size=4,
-        temporal_fill="zeros",
-    )
-    cotrans.load_state_dict(trans.state_dict())
-
-    # Training mode has large effect on BatchNorm result - test will fail otherwise
-    trans.eval()
-    cotrans.eval()
-
-    # Forward through models
-    target = trans([example_clip])[0]
-
-    outputs = []
-    for i in range(example_clip.shape[2]):
-        outputs.append(cotrans.forward([example_clip[:, :, i]]))
-
-    # For debugging:
-    # close = []
-    # for i in range(len(outputs)):
-    #     if torch.allclose(target, outputs[i], atol=5e-4):
-    #         close.append(f"o = {i}")
-
-    assert torch.allclose(target, outputs[3])
 
     # forward_steps also works
     outputs2 = cotrans.forward_steps([example_clip])[0]
