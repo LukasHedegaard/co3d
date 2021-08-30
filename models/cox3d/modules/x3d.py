@@ -886,7 +886,101 @@ class OldCoResStage(torch.nn.Module):
         return output
 
 
-class CoX3DHead(torch.nn.Module):
+def CoX3DHead(
+    dim_in: int,
+    dim_inner: int,
+    dim_out: int,
+    num_classes: int,
+    pool_size: int,
+    dropout_rate=0.0,
+    act_func="softmax",
+    inplace_relu=True,
+    eps=1e-5,
+    bn_mmt=0.1,
+    norm_module=torch.nn.BatchNorm3d,
+    bn_lin5_on=False,
+    temporal_window_size: int = 4,
+    temporal_fill: PaddingMode = "replicate",
+):
+    """
+    Continual X3D head.
+    This layer performs a fully-connected projection during training, when the
+    input size is 1x1x1. It performs a convolutional projection during testing
+    when the input size is larger than 1x1x1. If the inputs are from multiple
+    different pathways, the inputs will be concatenated after pooling.
+    """
+    modules = []
+    modules.append(
+        (
+            "conv_5",
+            co.Conv3d(
+                dim_in,
+                dim_inner,
+                kernel_size=(1, 1, 1),
+                stride=(1, 1, 1),
+                padding=(0, 0, 0),
+                bias=False,
+            ),
+        )
+    )
+    modules.append(
+        ("conv_5_bn", norm_module(num_features=dim_inner, eps=eps, momentum=bn_mmt))
+    )
+    modules.append(("conv_5_relu", torch.nn.ReLU(inplace_relu)))
+
+    if pool_size is None:
+        avg_pool = co.AdaptiveAvgPool3d(
+            (1, 1, 1), kernel_size=temporal_window_size, temporal_fill=temporal_fill
+        )
+    else:
+        avg_pool = co.AvgPool3d(pool_size, stride=1, temporal_fill=temporal_fill)
+    modules.append(("avg_pool", avg_pool))
+
+    modules.append(
+        (
+            "lin_5",
+            co.Conv3d(
+                dim_inner,
+                dim_out,
+                kernel_size=(1, 1, 1),
+                stride=(1, 1, 1),
+                padding=(0, 0, 0),
+                bias=False,
+            ),
+        )
+    )
+    if bn_lin5_on:
+        modules.append(
+            ("lin_5_bn", norm_module(num_features=dim_out, eps=eps, momentum=bn_mmt))
+        )
+
+    modules.append(("lin_5_relu", torch.nn.ReLU(inplace_relu)))
+
+    if dropout_rate > 0.0:
+        modules.append(("dropout", torch.nn.Dropout(dropout_rate)))
+
+    # Perform FC in a fully convolutional manner. The FC layer will be
+    # initialized with a different std comparing to convolutional layers.
+    modules.append(
+        ("projection", co.Linear(dim_out, num_classes, bias=True, channel_dim=1))
+    )
+
+    modules.append(
+        (
+            "act",
+            {
+                "softmax": torch.nn.Softmax(dim=1),
+                "sigmoid": torch.nn.Sigmoid(),
+            }[act_func],
+        )
+    )
+
+    modules.append(("view", co.Lambda(lambda x: x.view(x.shape[0], -1))))
+
+    return co.Sequential(OrderedDict(modules))
+
+
+class OldCoX3DHead(torch.nn.Module):
     """
     X3D head.
     This layer performs a fully-connected projection during training, when the
@@ -936,7 +1030,7 @@ class CoX3DHead(torch.nn.Module):
             bn_lin5_on (bool): if True, perform normalization on the features
                 before the classifier.
         """
-        super(CoX3DHead, self).__init__()
+        super(OldCoX3DHead, self).__init__()
         self.pool_size = pool_size
         self.dropout_rate = dropout_rate
         self.num_classes = num_classes
