@@ -572,19 +572,15 @@ class OldCoResBlock(torch.nn.Module):
 
 
 def CoResStage(
-    dim_in,
-    dim_out,
-    stride,
-    temp_kernel_sizes,
-    num_blocks,
-    dim_inner,
-    num_groups,
-    num_block_temp_kernel,
-    nonlocal_inds,
-    nonlocal_group,
-    nonlocal_pool,
-    dilation,
-    instantiation="softmax",
+    dim_in: int,
+    dim_out: int,
+    stride: int,
+    temp_kernel_sizes: int,
+    num_blocks: int,
+    dim_inner: int,
+    num_groups: int,
+    num_block_temp_kernel: int,
+    dilation: int,
     trans_func_name="x3d_transform",
     stride_1x1=False,
     inplace_relu=True,
@@ -593,45 +589,30 @@ def CoResStage(
     temporal_window_size: int = 4,
     temporal_fill: PaddingMode = "replicate",
     se_scope="frame",
+    *args,
+    **kwargs,
 ):
     """
-    The `__init__` method of any subclass should also contain these arguments.
-    ResStage builds p streams, where p can be greater or equal to one.
+    Create a Continual Residual X3D Stage.
+
+    Note: Compared to the original implementation of X3D, we discard the
+    obsolete handling of the multiple pathways and the non-local mehcanism.
+
     Args:
-        dim_in (list): list of p the channel dimensions of the input.
-            Different channel dimensions control the input dimension of
-            different pathways.
-        dim_out (list): list of p the channel dimensions of the output.
-            Different channel dimensions control the input dimension of
-            different pathways.
-        temp_kernel_sizes (list): list of the p temporal kernel sizes of the
-            convolution in the bottleneck. Different temp_kernel_sizes
-            control different pathway.
-        stride (list): list of the p strides of the bottleneck. Different
-            stride control different pathway.
-        num_blocks (list): list of p numbers of blocks for each of the
-            pathway.
-        dim_inner (list): list of the p inner channel dimensions of the
-            input. Different channel dimensions control the input dimension
-            of different pathways.
-        num_groups (list): list of number of p groups for the convolution.
+        dim_in (int): channel dimensions of the input.
+        dim_out (int): channel dimensions of the output.
+        temp_kernel_sizes (int): temporal kernel sizes of the
+            convolution in the bottleneck.
+        stride (int): stride of the bottleneck.
+        num_blocks (int): numbers of blocks.
+        dim_inner (int): inner channel dimensions of the input.
+        num_groups (int): number of roups for the convolution.
             num_groups=1 is for standard ResNet like networks, and
             num_groups>1 is for ResNeXt like networks.
-        num_block_temp_kernel (list): extent the temp_kernel_sizes to
+        num_block_temp_kernel (int): extent the temp_kernel_sizes to
             num_block_temp_kernel blocks, then fill temporal kernel size
             of 1 for the rest of the layers.
-        nonlocal_inds (list): If the tuple is empty, no nonlocal layer will
-            be added. If the tuple is not empty, add nonlocal layers after
-            the index-th block.
-        dilation (list): size of dilation for each pathway.
-        nonlocal_group (list): list of number of p nonlocal groups. Each
-            number controls how to fold temporal dimension to batch
-            dimension before applying nonlocal transformation.
-            https://github.com/facebookresearch/video-nonlocal-net.
-        instantiation (string): different instantiation for nonlocal layer.
-            Supports two different instantiation method:
-                "dot_product": normalizing correlation matrix with L2.
-                "softmax": normalizing correlation matrix with Softmax.
+        dilation (int): size of dilation.
         trans_func_name (string): name of the the transformation function apply
             on the network.
         norm_module (nn.Module): nn.Module for the normalization layer. The
@@ -639,7 +620,42 @@ def CoResStage(
         drop_connect_rate (float): basic rate at which blocks are dropped,
             linearly increases from input to output blocks.
     """
-    ...
+
+    assert trans_func_name == "x3d_transform"
+    assert num_block_temp_kernel <= num_blocks
+
+    temp_kernel_sizes = (temp_kernel_sizes * num_blocks)[:num_block_temp_kernel] + (
+        [1] * (num_blocks - num_block_temp_kernel)
+    )
+
+    return co.Sequential(
+        OrderedDict(
+            [
+                (
+                    f"pathway0_res{i}",
+                    CoResBlock(
+                        dim_in=dim_in if i == 0 else dim_out,
+                        dim_out=dim_out,
+                        temp_kernel_size=temp_kernel_sizes[i],
+                        stride=stride if i == 0 else 1,
+                        trans_func=CoX3DTransform,
+                        dim_inner=dim_inner,
+                        num_groups=num_groups,
+                        stride_1x1=stride_1x1,
+                        inplace_relu=inplace_relu,
+                        dilation=dilation,
+                        norm_module=norm_module,
+                        block_idx=i,
+                        drop_connect_rate=drop_connect_rate,
+                        temporal_window_size=temporal_window_size,
+                        temporal_fill=temporal_fill,
+                        se_scope=se_scope,
+                    ),
+                )
+                for i in range(num_blocks)
+            ]
+        )
+    )
 
 
 class OldCoResStage(torch.nn.Module):

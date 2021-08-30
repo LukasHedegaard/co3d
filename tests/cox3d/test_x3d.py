@@ -299,6 +299,136 @@ def test_ResBlock():
     assert torch.allclose(lasts, target)
 
 
+def test_ResStage_single():
+    # Regular
+    trans = ResStage(
+        dim_in=[2],
+        dim_out=[2],
+        dim_inner=[5],
+        temp_kernel_sizes=[[3]],
+        stride=[2],
+        num_blocks=[1],  # <--
+        num_groups=[5],
+        num_block_temp_kernel=[1],  # <--
+        nonlocal_inds=[[]],  # Dummy args used in original impl
+        nonlocal_group=[1],  # Dummy args used in original impl
+        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],  # Dummy args used in original impl
+        instantiation="dot_product",  # Dummy args used in original impl
+        trans_func_name="x3d_transform",
+        stride_1x1=False,
+        norm_module=torch.nn.BatchNorm3d,
+        dilation=[1],
+        drop_connect_rate=0.0,
+    )
+
+    # Converted block
+    cotrans = CoResStage(
+        dim_in=2,
+        dim_out=2,
+        dim_inner=5,
+        temp_kernel_sizes=[3],
+        stride=2,
+        num_blocks=1,  # <-
+        num_groups=5,
+        num_block_temp_kernel=1,  # <-
+        trans_func_name="x3d_transform",
+        stride_1x1=False,
+        norm_module=torch.nn.BatchNorm3d,
+        dilation=1,
+        drop_connect_rate=0.0,
+        temporal_window_size=example_clip.shape[2],
+        temporal_fill="zeros",
+        se_scope="clip",
+    )
+    cotrans.load_state_dict(trans.state_dict(), flatten=True)
+
+    # Training mode has large effect on BatchNorm result - test will fail otherwise
+    trans.eval()
+    cotrans.eval()
+
+    sample = torch.randn((1, 2, 4, 4, 4))
+
+    # Forward through models
+    target = trans.forward([sample])[0]  # needs to be packed due to multi-path support
+
+    # forward
+    output = cotrans.forward(sample)
+    assert torch.allclose(target, output)
+
+    # Broken up
+    cotrans.clean_state()
+    nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
+    assert isinstance(nothing, TensorPlaceholder)
+
+    lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
+    assert torch.allclose(lasts, target)
+
+
+def test_ResStage_multi():
+    # Regular
+    trans = ResStage(
+        dim_in=[2],
+        dim_out=[2],
+        dim_inner=[5],
+        temp_kernel_sizes=[[3]],
+        stride=[2],
+        num_blocks=[3],  # <--
+        num_groups=[5],
+        num_block_temp_kernel=[3],  # <--
+        nonlocal_inds=[[]],
+        nonlocal_group=[1],
+        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],
+        instantiation="dot_product",
+        trans_func_name="x3d_transform",
+        stride_1x1=False,
+        norm_module=torch.nn.BatchNorm3d,
+        dilation=[1],
+        drop_connect_rate=0.0,
+    )
+
+    # Converted block
+    cotrans = CoResStage(
+        dim_in=2,
+        dim_out=2,
+        dim_inner=5,
+        temp_kernel_sizes=[3],
+        stride=2,
+        num_blocks=3,  # <-
+        num_groups=5,
+        num_block_temp_kernel=3,  # <-
+        trans_func_name="x3d_transform",
+        stride_1x1=False,
+        norm_module=torch.nn.BatchNorm3d,
+        dilation=1,
+        drop_connect_rate=0.0,
+        temporal_window_size=example_clip.shape[2],
+        temporal_fill="zeros",
+        se_scope="clip",
+    )
+    cotrans.load_state_dict(trans.state_dict(), flatten=True)
+
+    # Training mode has large effect on BatchNorm result - test will fail otherwise
+    trans.eval()
+    cotrans.eval()
+
+    sample = torch.randn((1, 2, 4, 4, 4))
+
+    # Forward through models
+    target = trans.forward([sample])[0]  # needs to be packed due to multi-path support
+
+    # forward
+    output = cotrans.forward(sample)
+    assert torch.allclose(target, output)
+
+    # Broken up
+    cotrans.clean_state()
+    nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
+    assert isinstance(nothing, TensorPlaceholder)
+
+    lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
+    assert torch.allclose(lasts, target)
+
+
 example_clip = torch.normal(mean=torch.zeros(2 * 4 * 4 * 4)).reshape((1, 2, 4, 4, 4))
 next_example_frame = torch.normal(mean=torch.zeros(2 * 1 * 4 * 4)).reshape((1, 2, 4, 4))
 next_example_clip = torch.stack(
@@ -561,175 +691,6 @@ def test_CoX3DHead():
     #         close.append(f"o = {i}")
 
     assert torch.allclose(target, outputs[3])
-
-    # forward_steps also works
-    outputs2 = cotrans.forward_steps([example_clip])[0]
-    assert torch.allclose(target, outputs2)
-
-
-@pytest.mark.skip()
-def test_ResStage_multi():
-    # Regular
-    trans = ResStage(
-        dim_in=[2],
-        dim_out=[2],
-        dim_inner=[5],
-        temp_kernel_sizes=[[3]],
-        stride=[2],
-        num_blocks=[3],  # <--
-        num_groups=[5],
-        num_block_temp_kernel=[3],  # <--
-        nonlocal_inds=[[]],
-        nonlocal_group=[1],
-        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],
-        instantiation="dot_product",
-        trans_func_name="x3d_transform",
-        stride_1x1=False,
-        norm_module=torch.nn.BatchNorm3d,
-        dilation=[1],
-        drop_connect_rate=0.0,
-    )
-
-    # Converted block
-    cotrans = CoResStage(
-        dim_in=[2],
-        dim_out=[2],
-        dim_inner=[5],
-        temp_kernel_sizes=[[3]],
-        stride=[2],
-        num_blocks=[3],  # <--
-        num_groups=[5],
-        num_block_temp_kernel=[3],  # <--
-        nonlocal_inds=[[]],
-        nonlocal_group=[1],
-        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],
-        instantiation="dot_product",
-        trans_func_name="x3d_transform",
-        stride_1x1=False,
-        norm_module=torch.nn.BatchNorm3d,
-        dilation=[1],
-        drop_connect_rate=0.0,
-        temporal_window_size=example_clip.shape[2],
-        temporal_fill="zeros",
-        se_scope="frame",
-    )
-    cotrans.load_state_dict(trans.state_dict())
-
-    # Training mode has large effect on BatchNorm result - test will fail otherwise
-    trans.eval()
-    cotrans.eval()
-
-    # Forward through models
-    target = trans([example_clip])[0]
-
-    outputs = []
-    # Manual zero pad (due to padding=1 in trans.b Conv3d)
-    zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(cotrans.forward([zeros])[0])
-    for i in range(example_clip.shape[2]):
-        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
-    for _ in range(10):
-        outputs.append(cotrans.forward([zeros])[0])
-
-    # For debugging:
-    close = []
-    for t in range(target.shape[2]):
-        for i in range(len(outputs)):
-            if torch.allclose(target[:, :, t], outputs[i], atol=8e-2):
-                close.append(f"t = {t}, o = {i}")
-    shift = 1 + 3 * 2  # 1 from zero-padding in Conv3d, 3*2 from delay in each block
-
-    # SE block global average pool is still "filling up"
-    # This takes "temporal_window_size" which is 4 for each block
-    for t in range(3, target.shape[2]):
-        assert torch.allclose(target[:, :, t], outputs[t + shift], atol=8e-2)
-
-    # forward_steps also works
-    outputs2 = cotrans.forward_steps([example_clip])[0]
-    assert torch.allclose(target, outputs2, atol=5e-4)
-
-
-@pytest.mark.skip()
-def test_ResStage_single():
-    # Regular
-    trans = ResStage(
-        dim_in=[2],
-        dim_out=[2],
-        dim_inner=[5],
-        temp_kernel_sizes=[[3]],
-        stride=[2],
-        num_blocks=[1],  # <--
-        num_groups=[5],
-        num_block_temp_kernel=[1],  # <--
-        nonlocal_inds=[[]],
-        nonlocal_group=[1],
-        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],
-        instantiation="dot_product",
-        trans_func_name="x3d_transform",
-        stride_1x1=False,
-        norm_module=torch.nn.BatchNorm3d,
-        dilation=[1],
-        drop_connect_rate=0.0,
-    )
-
-    # Converted block
-    cotrans = CoResStage(
-        dim_in=[2],
-        dim_out=[2],
-        dim_inner=[5],
-        temp_kernel_sizes=[[3]],
-        stride=[2],
-        num_blocks=[1],  # <--
-        num_groups=[5],
-        num_block_temp_kernel=[1],  # <--
-        nonlocal_inds=[[]],
-        nonlocal_group=[1],
-        nonlocal_pool=[[1, 2, 2], [1, 2, 2]],
-        instantiation="dot_product",
-        trans_func_name="x3d_transform",
-        stride_1x1=False,
-        norm_module=torch.nn.BatchNorm3d,
-        dilation=[1],
-        drop_connect_rate=0.0,
-        temporal_window_size=example_clip.shape[2],
-        temporal_fill="zeros",
-        se_scope="clip",
-    )
-    cotrans.load_state_dict(trans.state_dict())
-
-    # Training mode has large effect on BatchNorm result - test will fail otherwise
-    trans.eval()
-    cotrans.eval()
-
-    # Forward through models
-    target = trans([example_clip])[0]
-
-    outputs = []
-    # Manual zero pad (due to padding=1 in trans.b Conv3d)
-    zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(cotrans.forward([zeros])[0])
-    for i in range(example_clip.shape[2]):
-        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-
-    # For debugging:
-    close = []
-    for t in range(target.shape[2]):
-        for i in range(len(outputs)):
-            if torch.allclose(target[:, :, t], outputs[i], atol=5e-2):
-                close.append(f"t = {t}, o = {i}")
-
-    shift = example_clip.shape[2] - 1  # 1 from zero-padding in Conv3d, 1 from delay
-
-    # SE block global average pool is still "filling up"
-    # This takes "temporal_window_size" which is 4 here
-    for t in range(1, target.shape[2]):
-        assert torch.allclose(target[:, :, t], outputs[t + shift], atol=5e-2)
-
-    # After temporal_window_size inputs it also produces precise computation
-    torch.allclose(target[:, :, 3], outputs[3 + shift], atol=1e-9)
 
     # forward_steps also works
     outputs2 = cotrans.forward_steps([example_clip])[0]
