@@ -1,6 +1,7 @@
 # Continual 3D Convolutional Neural Networks
 [![Paper](http://img.shields.io/badge/paper-arxiv.2106.00050-B31B1B.svg)](https://arxiv.org/abs/2106.00050)
 [![Framework](https://img.shields.io/badge/Built_to-Ride-643DD9.svg)](https://github.com/LukasHedegaard/ride)
+[![codecov](https://codecov.io/gh/LukasHedegaard/co3d/branch/main/graph/badge.svg?token=IQBA9O7AQW)](https://codecov.io/gh/LukasHedegaard/co3d)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
