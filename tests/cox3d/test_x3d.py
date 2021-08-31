@@ -3,7 +3,6 @@ from urllib.request import urlretrieve
 
 import continual as co
 import numpy as np
-import pytest
 import torch
 from continual import TensorPlaceholder
 from PIL import Image
