@@ -80,6 +80,59 @@ def forward_partial(model: torch.nn.Module, input: torch.Tensor, num_modules: in
     return x
 
 
+def test_VideoModelStem():
+    trans = VideoModelStem(
+        dim_in=[2],
+        dim_out=[2],
+        kernel=[[5, 3, 3]],
+        stride=[[1, 2, 2]],
+        padding=[[2, 1, 1]],
+        norm_module=torch.nn.BatchNorm3d,
+        stem_func_name="x3d_stem",
+    )
+
+    cotrans = CoVideoModelStem(
+        dim_in=2,
+        dim_out=2,
+        kernel=[5, 3, 3],
+        stride=[1, 2, 2],
+        padding=[2, 1, 1],
+        norm_module=torch.nn.BatchNorm3d,
+        stem_func_name="x3d_stem",
+        temporal_fill="zeros",
+    )
+    cotrans.load_state_dict(trans.state_dict(), flatten=True)
+    assert cotrans.delay == 2
+
+    # Training mode has large effect on BatchNorm result - test will fail otherwise
+    trans.eval()
+    cotrans.eval()
+
+    sample = torch.randn((1, 2, 4, 4, 4))
+
+    # Forward through models
+    target = trans.forward([sample])[0]
+
+    # forward
+    output = cotrans.forward(sample)
+    assert torch.allclose(target, output)
+
+    # forward_steps
+    output = cotrans.forward_steps(sample, pad_end=True)
+    assert torch.allclose(target, output)
+
+    # forward_steps - broken up
+    cotrans.clean_state()
+    nothing = cotrans.forward_steps(sample[:, :, :-2], pad_end=False)  # init
+    assert isinstance(nothing, TensorPlaceholder)
+
+    mid = cotrans.forward_step(sample[:, :, -2])
+    assert torch.allclose(mid, target[:, :, 0])
+
+    lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
+    assert torch.allclose(lasts, target[:, :, 1:])
+
+
 def test_CoX3DTransform():
     sample = torch.randn((1, 2, 4, 4, 4))
 
@@ -634,61 +687,3 @@ def test_CoX3D():
     assert len(set(target_top10[:1]) - set(next_frame_top10[:1])) == 0
     # Top 10 is half-way overlapping
     assert len(set(target_top10) - set(next_frame_top10)) == 5
-
-
-@pytest.mark.skip()
-def test_VideoModelStem():
-    trans = VideoModelStem(
-        dim_in=[2],
-        dim_out=[2],
-        kernel=[[5, 3, 3]],
-        stride=[[1, 2, 2]],
-        padding=[[2, 1, 1]],
-        norm_module=torch.nn.BatchNorm3d,
-        stem_func_name="x3d_stem",
-    )
-
-    cotrans = CoVideoModelStem(
-        dim_in=[2],
-        dim_out=[2],
-        kernel=[[5, 3, 3]],
-        stride=[[1, 2, 2]],
-        padding=[[2, 1, 1]],
-        norm_module=torch.nn.BatchNorm3d,
-        stem_func_name="x3d_stem",
-        temporal_fill="zeros",
-    )
-    cotrans.load_state_dict(trans.state_dict())
-
-    # Training mode has large effect on BatchNorm result - test will fail otherwise
-    trans.eval()
-    cotrans.eval()
-
-    # Forward through models
-    target = trans([example_clip])[0]
-
-    outputs = []
-    # Manual zero pad (due to padding=1 in trans.b Conv3d)
-    zeros = torch.zeros_like(example_clip[:, :, 0])
-    outputs.append(cotrans.forward([zeros])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-    for i in range(example_clip.shape[2]):
-        outputs.append(cotrans.forward([example_clip[:, :, i]])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-    outputs.append(cotrans.forward([zeros])[0])
-
-    # For debugging:
-    # close = []
-    # for t in range(target.shape[2]):
-    #     for i in range(len(outputs)):
-    #         if torch.allclose(target[:, :, t], outputs[i], atol=5e-4):
-    #             close.append(f"t = {t}, o = {i}")
-
-    shift = 4  # kernel[0] - 1
-
-    for t in range(1, target.shape[2]):
-        assert torch.allclose(target[:, :, t], outputs[t + shift])
-
-    # forward_steps also works
-    outputs2 = cotrans.forward_steps([example_clip])[0]
-    assert torch.allclose(target, outputs2)
