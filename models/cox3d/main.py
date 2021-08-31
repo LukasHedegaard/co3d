@@ -120,7 +120,7 @@ class CoX3DRide(
         c.add(
             name="co3d_temporal_fill",
             type=str,
-            default="replicate",
+            default="zeros",
             choices=["zeros", "replicate"],
             strategy="choice",
             description="Fill mode for samples along temporal dimension. This is used at state initialisation and in `forward_steps` as padding along the temporal dimension.",

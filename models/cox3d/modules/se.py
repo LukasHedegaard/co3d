@@ -63,7 +63,7 @@ def CoSe(
     ratio: float,
     relu_act: bool = True,
     scope="frame",
-    temporal_fill="replicate",
+    temporal_fill="zeros",
 ):
     dim_fc = _round_width(dim_in, ratio)
     return co.Residual(
@@ -116,7 +116,7 @@ class CoSeAlt(co.CoModule, nn.Module):
         ratio: float,
         relu_act: bool = True,
         scope="frame",
-        temporal_fill="replicate",
+        temporal_fill="zeros",
     ):
         """
         Args:
