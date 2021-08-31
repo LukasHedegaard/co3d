@@ -594,17 +594,16 @@ def x3d_feature_example(num_modules: int):
     return result
 
 
-@pytest.mark.skip()
 def test_CoX3D():
-    weights_path = download_weights()
+    weights_path = download_weights()  # s
     frames_per_clip = 13
-    input = boring_video(image_size=160, frames_per_clip=frames_per_clip)
+    sample = boring_video(image_size=160, frames_per_clip=frames_per_clip)
 
     # Regular model
     model = X3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=4,
+        frames_per_clip=frames_per_clip,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -643,47 +642,152 @@ def test_CoX3D():
         temporal_fill="zeros",
         se_scope="clip",
     )
+    assert comodel.delay == 220
 
     # Load weights
     model_state = torch.load(weights_path, map_location="cpu")["model_state"]
     model.load_state_dict(model_state)
-    comodel.load_state_dict(model_state)
+    comodel.load_state_dict(model_state, flatten=True)
 
     # Training mode has large effect on BatchNorm result - test will fail otherwise
     model.eval()
     comodel.eval()
 
-    # Forward
-    target = model(input)
+    target = model.forward(sample)
+
+    # forward
+    output = comodel.forward(sample)
+    assert torch.allclose(target, output)
+
+    # forward_steps
+    output = comodel.forward_steps(sample, pad_end=True)
+    assert torch.allclose(target, output)
+
+    # forward
+    comodel.clean_state()
+    # init
+    for i in range(frames_per_clip):
+        comodel.forward_step(sample[:, :, i])
+
+    # zero-pad end manually
+    zeros = torch.zeros_like(sample[:, :, 0])
+    for _ in range(comodel.delay - frames_per_clip):
+        comodel.forward_step(zeros)
+
+    # final result
+    output = comodel.forward_step(zeros)
+    torch.allclose(output, target, atol=5e-3)
+
+    target_top10 = torch.topk(target, k=10)[1][0].tolist()
+    output_top10 = torch.topk(output, k=10)[1][0].tolist()
+
+    assert len(set(target_top10) - set(output_top10)) <= 3
+
+    # Another step - now out of comparable operation
+    output = comodel.forward_step(zeros)
+    output_top10 = torch.topk(output, k=10)[1][0].tolist()
+    assert len(set(target_top10) - set(output_top10)) <= 3
+
+
+def test_CoX3D_se_mod():
+    weights_path = download_weights()  # s
+    frames_per_clip = 13
+    sample = boring_video(image_size=160, frames_per_clip=frames_per_clip)
+
+    # Regular model
+    model = X3D(
+        dim_in=3,
+        image_size=160,
+        frames_per_clip=frames_per_clip,
+        num_classes=400,
+        x3d_conv1_dim=12,
+        x3d_conv5_dim=2048,
+        x3d_num_groups=1,
+        x3d_width_per_group=64,
+        x3d_width_factor=2.0,
+        x3d_depth_factor=2.2,
+        x3d_bottleneck_factor=2.25,
+        x3d_use_channelwise_3x3x3=1,
+        x3d_dropout_rate=0.5,
+        x3d_head_activation="softmax",
+        x3d_head_batchnorm=0,
+        x3d_fc_std_init=0.01,
+        x3d_final_batchnorm_zero_init=1,
+    )
+
+    # Continual model
+    comodel = CoX3D(
+        dim_in=3,
+        image_size=160,
+        frames_per_clip=frames_per_clip,
+        num_classes=400,
+        x3d_conv1_dim=12,
+        x3d_conv5_dim=2048,
+        x3d_num_groups=1,
+        x3d_width_per_group=64,
+        x3d_width_factor=2.0,
+        x3d_depth_factor=2.2,
+        x3d_bottleneck_factor=2.25,
+        x3d_use_channelwise_3x3x3=1,
+        x3d_dropout_rate=0.5,
+        x3d_head_activation="softmax",
+        x3d_head_batchnorm=0,
+        x3d_fc_std_init=0.01,
+        x3d_final_batchnorm_zero_init=1,
+        temporal_fill="zeros",
+        se_scope="frame",
+    )
+    assert comodel.delay == 40  # significantly reduced!
+
+    # Load weights
+    model_state = torch.load(weights_path, map_location="cpu")["model_state"]
+    model.load_state_dict(model_state)
+    comodel.load_state_dict(model_state, flatten=True)
+
+    # Training mode has large effect on BatchNorm result - test will fail otherwise
+    model.eval()
+    comodel.eval()
+
+    target = model.forward(sample)
     target_top10 = torch.topk(target, k=10)[1][0].tolist()
 
-    # forward_steps produces same outputs
-    output = comodel.forward_steps(input)
-    assert torch.allclose(target, output, atol=5e-3)
+    # forward
+    output = comodel.forward(sample)
+    assert torch.allclose(target, output)  # still identical
 
-    # Continuation is not exact due to zero paddings (even for boring video)
-    output_next_frame = comodel.forward(input[:, :, -1])
+    # forward_steps - not exact any more
+    output = comodel.forward_steps(sample, pad_end=True)
+    output_top10 = torch.topk(output, k=10)[1][0].tolist()
 
-    # assert torch.allclose(target, output_next_frame, atol=5e-4)
+    assert torch.allclose(target, output, atol=0.2)  # inexact
+    assert target_top10[0] == output_top10[0]
+    assert len(set(target_top10[:3]) - set(output_top10[:3])) <= 1
+    assert len(set(target_top10) - set(output_top10)) <= 4
 
-    next_frame_top10 = torch.topk(output_next_frame, k=10)[1][0].tolist()
-    # Top 2 is the same
-    assert len(set(target_top10[:2]) - set(next_frame_top10[:2])) == 0
-    # Top 4 is overlapping
-    assert len(set(target_top10[:4]) - set(next_frame_top10[:4])) == 0
-    # Top 10 is mostly overlapping
-    assert len(set(target_top10) - set(next_frame_top10)) == 1
+    # forward
+    comodel.clean_state()
+    # init
+    for i in range(frames_per_clip):
+        comodel.forward_step(sample[:, :, i])
 
-    # Check output if we continue for a long time
-    for _ in range(20):
-        output_next_frame = comodel.forward(input[:, :, -1])
+    # zero-pad end manually
+    zeros = torch.zeros_like(sample[:, :, 0])
+    for _ in range(comodel.delay - frames_per_clip):
+        comodel.forward_step(zeros)
 
-    # They are further apart now
-    assert torch.allclose(target, output_next_frame, atol=5e-2)
-    _, next_frame_top10 = torch.topk(output_next_frame, k=10)
+    # final result
+    output = comodel.forward_step(zeros)
 
-    next_frame_top10 = torch.topk(output_next_frame, k=10)[1][0].tolist()
-    # Top 1 is the same
-    assert len(set(target_top10[:1]) - set(next_frame_top10[:1])) == 0
-    # Top 10 is half-way overlapping
-    assert len(set(target_top10) - set(next_frame_top10)) == 5
+    assert torch.allclose(target, output, atol=0.3)  # inexact
+    assert target_top10[0] == output_top10[0]
+    assert len(set(target_top10[:3]) - set(output_top10[:3])) <= 1
+    assert len(set(target_top10) - set(output_top10)) <= 4
+
+    # Another step - now out of comparable operation
+    output = comodel.forward_step(zeros)
+    output_top10 = torch.topk(output, k=10)[1][0].tolist()
+
+    assert torch.allclose(target, output, atol=0.5)  # inexact
+    assert target_top10[0] == output_top10[0]
+    assert len(set(target_top10[:3]) - set(output_top10[:3])) <= 1
+    assert len(set(target_top10) - set(output_top10)) <= 4

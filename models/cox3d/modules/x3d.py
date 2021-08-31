@@ -85,7 +85,6 @@ def CoX3DTransform(
         dilation=(1, dilation, dilation),
         temporal_fill=temporal_fill,
     )
-    b.forward(torch.ones((1, 5, 10, 10, 10), dtype=torch.float))
 
     b_bn = co.forward_stepping(
         norm_module(num_features=dim_inner, eps=eps, momentum=bn_mmt)
@@ -975,7 +974,10 @@ def CoX3DHead(
         )
     )
 
-    modules.append(("view", co.Lambda(lambda x: x.view(x.shape[0], -1))))
+    def view(x):
+        return x.view(x.shape[0], -1)
+
+    modules.append(("view", co.Lambda(view, unsqueeze_step=False)))
 
     return co.Sequential(OrderedDict(modules))
 
@@ -1527,7 +1529,135 @@ class OldCoVideoModelStem(torch.nn.Module):
         return x
 
 
-class CoX3D(torch.nn.Module):
+def CoX3D(
+    dim_in: int,
+    image_size: int,
+    frames_per_clip: int,
+    num_classes: int,
+    x3d_conv1_dim: int,
+    x3d_conv5_dim: int,
+    x3d_num_groups: int,
+    x3d_width_per_group: int,
+    x3d_width_factor: float,
+    x3d_depth_factor: float,
+    x3d_bottleneck_factor: float,
+    x3d_use_channelwise_3x3x3: bool,
+    x3d_dropout_rate: float,
+    x3d_head_activation: str,
+    x3d_head_batchnorm: bool,
+    x3d_fc_std_init: float,
+    x3d_final_batchnorm_zero_init: bool,
+    temporal_fill: PaddingMode = "replicate",
+    se_scope="frame",
+):
+    """
+    Continual X3D model,
+    adapted from https://github.com/facebookresearch/SlowFast
+
+    Christoph Feichtenhofer.
+    "X3D: Expanding Architectures for Efficient Video Recognition."
+    https://arxiv.org/abs/2004.04730
+    """
+    norm_module = torch.nn.BatchNorm3d
+    exp_stage = 2.0
+    dim_conv1 = x3d_conv1_dim
+
+    num_groups = x3d_num_groups
+    width_per_group = x3d_width_per_group
+    dim_inner = num_groups * width_per_group
+
+    w_mul = x3d_width_factor
+    d_mul = x3d_depth_factor
+
+    dim_res1 = _round_width(dim_conv1, w_mul)
+    dim_res2 = dim_conv1
+    dim_res3 = _round_width(dim_res2, exp_stage, divisor=8)
+    dim_res4 = _round_width(dim_res3, exp_stage, divisor=8)
+    dim_res5 = _round_width(dim_res4, exp_stage, divisor=8)
+
+    block_basis = [
+        # blocks, c, stride
+        [1, dim_res2, 2],
+        [2, dim_res3, 2],
+        [5, dim_res4, 2],
+        [3, dim_res5, 2],
+    ]
+
+    # Basis of temporal kernel sizes for each of the stage.
+    temp_kernel = [
+        [5],  # conv1 temporal kernels.
+        [3],  # res2 temporal kernels.
+        [3],  # res3 temporal kernels.
+        [3],  # res4 temporal kernels.
+        [3],  # res5 temporal kernels.
+    ]
+
+    modules = []
+
+    s1 = CoVideoModelStem(
+        dim_in=dim_in,
+        dim_out=dim_res1,
+        kernel=temp_kernel[0] + [3, 3],
+        stride=[1, 2, 2],
+        padding=[temp_kernel[0][0] // 2, 1, 1],
+        norm_module=norm_module,
+        stem_func_name="x3d_stem",
+        temporal_window_size=frames_per_clip,
+        temporal_fill=temporal_fill,
+    )
+    modules.append(("s1", s1))
+
+    # blob_in = s1
+    dim_in = dim_res1
+    dim_out = dim_in
+    for stage, block in enumerate(block_basis):
+        dim_out = _round_width(block[1], w_mul)
+        dim_inner = int(x3d_bottleneck_factor * dim_out)
+
+        n_rep = _round_repeats(block[0], d_mul)
+        prefix = "s{}".format(stage + 2)  # start w res2 to follow convention
+
+        s = CoResStage(
+            dim_in=dim_in,
+            dim_out=dim_out,
+            dim_inner=dim_inner,
+            temp_kernel_sizes=temp_kernel[1],
+            stride=block[2],
+            num_blocks=n_rep,
+            num_groups=dim_inner if x3d_use_channelwise_3x3x3 else num_groups,
+            num_block_temp_kernel=n_rep,
+            trans_func_name="x3d_transform",
+            stride_1x1=False,
+            norm_module=norm_module,
+            dilation=1,
+            drop_connect_rate=0.0,
+            temporal_window_size=frames_per_clip,
+            temporal_fill=temporal_fill,
+            se_scope=se_scope,
+        )
+        dim_in = dim_out
+        modules.append((prefix, s))
+
+    spat_sz = int(math.ceil(image_size / 32.0))
+    head = CoX3DHead(
+        dim_in=dim_out,
+        dim_inner=dim_inner,
+        dim_out=x3d_conv5_dim,
+        num_classes=num_classes,
+        pool_size=(frames_per_clip, spat_sz, spat_sz),
+        dropout_rate=x3d_dropout_rate,
+        act_func=x3d_head_activation,
+        bn_lin5_on=bool(x3d_head_batchnorm),
+        temporal_window_size=frames_per_clip,
+        temporal_fill=temporal_fill,
+    )
+    modules.append(("head", head))
+    seq = co.Sequential(OrderedDict(modules))
+    init_weights(seq, x3d_fc_std_init, bool(x3d_final_batchnorm_zero_init))
+    return seq
+
+
+class OldCoX3D(torch.nn.Module):
     """
     Recurrent X3D model,
     adapted from https://github.com/facebookresearch/SlowFast
@@ -1657,7 +1787,7 @@ class CoX3D(torch.nn.Module):
             dropout_rate=x3d_dropout_rate,
             act_func=x3d_head_activation,
             bn_lin5_on=bool(x3d_head_batchnorm),
-            temporal_window_size=4,
+            temporal_window_size=frames_per_clip,
             temporal_fill=temporal_fill,
         )
         init_weights(self, x3d_fc_std_init, bool(x3d_final_batchnorm_zero_init))
