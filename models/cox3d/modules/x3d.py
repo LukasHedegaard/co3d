@@ -1177,7 +1177,84 @@ class OldCoX3DHead(torch.nn.Module):
         return x
 
 
-class CoX3DStem(torch.nn.Module):
+def CoX3DStem(
+    dim_in: int,
+    dim_out: int,
+    kernel: int,
+    stride: int,
+    padding: int,
+    inplace_relu=True,
+    eps=1e-5,
+    bn_mmt=0.1,
+    norm_module=torch.nn.BatchNorm3d,
+    temporal_fill: PaddingMode = "replicate",
+    *args,
+    **kwargs,
+):
+    """
+    X3D's 3D stem module.
+    Performs a spatial followed by a depthwise temporal Convolution, BN, and Relu followed by a
+    spatiotemporal pooling.
+
+    Args:
+        dim_in (int): the channel dimension of the input. Normally 3 is used
+            for rgb input, and 2 or 3 is used for optical flow input.
+        dim_out (int): the output dimension of the convolution in the stem
+            layer.
+        kernel (list): the kernel size of the convolution in the stem layer.
+            temporal kernel size, height kernel size, width kernel size in
+            order.
+        stride (list): the stride size of the convolution in the stem layer.
+            temporal kernel stride, height kernel size, width kernel size in
+            order.
+        padding (int): the padding size of the convolution in the stem
+            layer, temporal padding size, height padding size, width
+            padding size in order.
+        inplace_relu (bool): calculate the relu on the original input
+            without allocating new memory.
+        eps (float): epsilon for batch norm.
+        bn_mmt (float): momentum for batch norm. Noted that BN momentum in
+            PyTorch = 1 - BN momentum in Caffe2.
+        norm_module (torch.nn.Module): torch.nn.Module for the normalization layer. The
+            default is torch.nn.BatchNorm3d.
+    """
+    conv_xy = co.Conv3d(
+        dim_in,
+        dim_out,
+        kernel_size=(1, kernel[1], kernel[2]),
+        stride=(1, stride[1], stride[2]),
+        padding=(0, padding[1], padding[2]),
+        bias=False,
+    )
+
+    conv = co.Conv3d(
+        dim_out,
+        dim_out,
+        kernel_size=(kernel[0], 1, 1),
+        stride=(stride[0], 1, 1),
+        padding=(padding[0], 0, 0),
+        bias=False,
+        groups=dim_out,
+        temporal_fill=temporal_fill,
+    )
+
+    bn = norm_module(num_features=dim_out, eps=eps, momentum=bn_mmt)
+
+    relu = torch.nn.ReLU(inplace_relu)
+
+    return co.Sequential(
+        OrderedDict(
+            [
+                ("conv_xy", conv_xy),
+                ("conv", conv),
+                ("bn", bn),
+                ("relu", relu),
+            ]
+        )
+    )
+
+
+class OldCoX3DStem(torch.nn.Module):
     """
     X3D's 3D stem module.
     Performs a spatial followed by a depthwise temporal Convolution, BN, and Relu following by a
@@ -1223,7 +1300,7 @@ class CoX3DStem(torch.nn.Module):
             norm_module (torch.nn.Module): torch.nn.Module for the normalization layer. The
                 default is torch.nn.BatchNorm3d.
         """
-        super(CoX3DStem, self).__init__()
+        super(OldCoX3DStem, self).__init__()
         self.kernel = kernel
         self.stride = stride
         self.padding = padding
@@ -1274,7 +1351,73 @@ class CoX3DStem(torch.nn.Module):
         return x
 
 
-class CoVideoModelStem(torch.nn.Module):
+def CoVideoModelStem(
+    dim_in: int,
+    dim_out: int,
+    kernel: int,
+    stride: int,
+    padding: int,
+    inplace_relu=True,
+    eps=1e-5,
+    bn_mmt=0.1,
+    norm_module=torch.nn.BatchNorm3d,
+    stem_func_name="x3d_stem",
+    temporal_window_size: int = 4,
+    temporal_fill: PaddingMode = "replicate",
+):
+    """
+    Args:
+        dim_in (int): channel dimensions of the inputs.
+        dim_out (int): output dimension of the convolution in the stem
+            layer.
+        kernel (int): kernel size of the convolutions in the stem
+            layers. Temporal kernel size, height kernel size, width kernel
+            size in order.
+        stride (int): stride sizes of the convolutions in the stem
+            layer. Temporal kernel stride, height kernel size, width kernel
+            size in order.
+        padding (int): paddings sizes of the convolutions in the stem
+            layer. Temporal padding size, height padding size, width padding
+            size in order.
+        inplace_relu (bool): calculate the relu on the original input
+            without allocating new memory.
+        eps (float): epsilon for batch norm.
+        bn_mmt (float): momentum for batch norm. Noted that BN momentum in
+            PyTorch = 1 - BN momentum in Caffe2.
+        norm_module (torch.nn.Module): torch.nn.Module for the normalization layer. The
+            default is torch.nn.BatchNorm3d.
+        stem_func_name (string): name of the the stem function applied on
+            input to the network.
+    """
+    assert (
+        stem_func_name == "x3d_stem"
+    ), "Currently, only 'x3d_stem' stem func is implemented."
+
+    return co.Sequential(
+        OrderedDict(
+            [
+                (
+                    "pathway0_stem",
+                    CoX3DStem(
+                        dim_in,
+                        dim_out,
+                        kernel,
+                        stride,
+                        padding,
+                        inplace_relu,
+                        eps,
+                        bn_mmt,
+                        norm_module,
+                        temporal_window_size=temporal_window_size,
+                        temporal_fill=temporal_fill,
+                    ),
+                )
+            ]
+        )
+    )
+
+
+class OldCoVideoModelStem(torch.nn.Module):
     """
     Video 3D stem module. Provides stem operations of Conv, BN, ReLU, MaxPool
     on input data tensor for one or multiple pathways.
@@ -1323,7 +1466,7 @@ class CoVideoModelStem(torch.nn.Module):
             stem_func_name (string): name of the the stem function applied on
                 input to the network.
         """
-        super(CoVideoModelStem, self).__init__()
+        super(OldCoVideoModelStem, self).__init__()
 
         assert (
             len(
