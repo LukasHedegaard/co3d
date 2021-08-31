@@ -27,7 +27,7 @@ def CoX3DTransform(
     swish_inner=True,
     block_idx=0,
     temporal_window_size: int = 4,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
     se_scope="frame",  # "frame" or "clip"
 ):
     """
@@ -163,7 +163,7 @@ class OldCoX3DTransform(torch.nn.Module):
         swish_inner=True,
         block_idx=0,
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
         se_scope="frame",  # "frame" or "clip"
     ):
         """
@@ -331,7 +331,7 @@ def CoResBlock(
     block_idx=0,
     drop_connect_rate=0.0,
     temporal_window_size: int = 4,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
     se_scope="frame",  # "clip" or "frame"
 ):
     """
@@ -462,7 +462,7 @@ class OldCoResBlock(torch.nn.Module):
         block_idx=0,
         drop_connect_rate=0.0,
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
         se_scope="frame",  # "clip" or "frame"
     ):
         """
@@ -586,7 +586,7 @@ def CoResStage(
     norm_module=torch.nn.BatchNorm3d,
     drop_connect_rate=0.0,
     temporal_window_size: int = 4,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
     se_scope="frame",
     *args,
     **kwargs,
@@ -689,7 +689,7 @@ class OldCoResStage(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         drop_connect_rate=0.0,
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
         se_scope="frame",
     ):
         """
@@ -899,7 +899,7 @@ def CoX3DHead(
     norm_module=torch.nn.BatchNorm3d,
     bn_lin5_on=False,
     temporal_window_size: int = 4,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
 ):
     """
     Continual X3D head.
@@ -1006,7 +1006,7 @@ class OldCoX3DHead(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         bn_lin5_on=False,
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -1189,7 +1189,7 @@ def CoX3DStem(
     eps=1e-5,
     bn_mmt=0.1,
     norm_module=torch.nn.BatchNorm3d,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
     *args,
     **kwargs,
 ):
@@ -1275,7 +1275,7 @@ class OldCoX3DStem(torch.nn.Module):
         bn_mmt=0.1,
         norm_module=torch.nn.BatchNorm3d,
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
     ):
         """
         The `__init__` method of any subclass should also contain these arguments.
@@ -1365,7 +1365,7 @@ def CoVideoModelStem(
     norm_module=torch.nn.BatchNorm3d,
     stem_func_name="x3d_stem",
     temporal_window_size: int = 4,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
 ):
     """
     Args:
@@ -1438,7 +1438,7 @@ class OldCoVideoModelStem(torch.nn.Module):
         norm_module=torch.nn.BatchNorm3d,
         stem_func_name="x3d_stem",
         temporal_window_size: int = 4,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -1547,7 +1547,7 @@ def CoX3D(
     x3d_head_batchnorm: bool,
     x3d_fc_std_init: float,
     x3d_final_batchnorm_zero_init: bool,
-    temporal_fill: PaddingMode = "replicate",
+    temporal_fill: PaddingMode = "zeros",
     se_scope="frame",
 ):
     """
@@ -1686,7 +1686,7 @@ class OldCoX3D(torch.nn.Module):
         x3d_head_batchnorm: bool,
         x3d_fc_std_init: float,
         x3d_final_batchnorm_zero_init: bool,
-        temporal_fill: PaddingMode = "replicate",
+        temporal_fill: PaddingMode = "zeros",
         se_scope="frame",
     ):
         torch.nn.Module.__init__(self)
