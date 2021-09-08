@@ -610,7 +610,7 @@ def CoX3D(
     x3d_final_batchnorm_zero_init: bool,
     temporal_fill: PaddingMode = "zeros",
     se_scope="frame",
-):
+) -> co.Sequential:
     """
     Continual X3D model,
     adapted from https://github.com/facebookresearch/SlowFast

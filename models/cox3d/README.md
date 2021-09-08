@@ -1,5 +1,5 @@
 # CoX3D
-Recurrent 3D Convolution implementation of _"X3D: Expanding Architectures for Efficient Video Recognition" [[ArXiv](https://arxiv.org/abs/2004.04730)]_.
+Continual implementation of _"X3D: Expanding Architectures for Efficient Video Recognition" [[ArXiv](https://arxiv.org/abs/2004.04730)]_.
 
 ## Install
 This model has no dependencies beyond the standard dependencies found in `~/setup.py`. 
