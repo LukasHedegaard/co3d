@@ -201,9 +201,9 @@ class ActionRecognitionDatasetLoader:
         data_path = root_path / "data"
         annotation_path = root_path / "splits"
 
-        assert root_path.is_dir()
-        assert data_path.is_dir()
-        assert annotation_path.is_dir()
+        assert root_path.is_dir(), f"{root_path} is not a valid directory"
+        assert data_path.is_dir(), f"{data_path} is not a valid directory"
+        assert annotation_path.is_dir(), f"{annotation_path} is not a valid directory"
 
         train_ds: Dataset
         val_ds: Dataset
