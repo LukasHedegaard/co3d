@@ -231,6 +231,9 @@ class CoX3DRide(
 
         result = None
 
+        if "init" in self.hparams.co3d_forward_mode:
+            self.module.warm_up(tuple(x[:, :, 0].shape))
+
         # Forward whole clip to init state
         if "clip" == self.hparams.co3d_forward_mode:
             result = self.module.forward(x[:, :, : self.temporal_window_size])
