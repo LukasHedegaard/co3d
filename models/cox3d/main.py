@@ -271,8 +271,9 @@ class CoX3DRide(
         return loaded_state_dict
 
     def warm_up(self, input_shape: Sequence[int], *args, **kwargs):
-        step_shape = (*input_shape[:2], *input_shape[3:])
-        return self.module.warm_up(step_shape)
+        for m in self.modules.modules():
+            if hasattr(m, "state_index"):
+                m.state_index = 0
 
 
 if __name__ == "__main__":
