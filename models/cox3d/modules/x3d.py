@@ -442,7 +442,7 @@ def CoX3DHead(
     def view(x):
         return x.view(x.shape[0], -1)
 
-    modules.append(("view", co.Lambda(view, unsqueeze_step=False)))
+    modules.append(("view", co.Lambda(view)))
 
     return co.Sequential(OrderedDict(modules))
 
