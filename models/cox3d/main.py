@@ -247,12 +247,16 @@ class CoX3DRide(
                 if "clip" in self.hparams.co3d_forward_mode
                 else 0
             )
-            self.module.forward_steps(
-                x[:, :, start : start + self.hparams.co3d_forward_frame_delay]
-            )
             # Saturate by running example
-            # for i in range(1, self.hparams.co3d_forward_frame_delay + 1):
-            #     self.module.forward_frame(x[:, :, start_frame + i])
+
+            # Heuristic choice: If no more frames are available, repeat last
+            def xi_or_last_frame(i):
+                if i >= x.shape[2]:
+                    return x[:, :, -1]
+                return x[:, :, i]
+
+            for i in range(0, self.hparams.co3d_forward_frame_delay):
+                self.module.forward_step(xi_or_last_frame(start + i))
 
         # Compute output for last frame(s)
         if "frame" in self.hparams.co3d_forward_mode:
