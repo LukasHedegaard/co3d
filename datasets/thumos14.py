@@ -236,6 +236,9 @@ def decode_video(
 
     video_stream = container.streams.video[0]
     video_fps = float(video_stream.average_rate)
+    # Some fractions are noted as 30/1, others as 30000/1001.
+    # video pts are stepped according to the denominator of the frame_rate (e.g. 1 or 1001)
+    pts_base = video_stream.average_rate.denominator
     video_duration = container.duration / 1e6  # seconds
 
     if video_duration is None:
@@ -243,7 +246,7 @@ def decode_video(
         video_start_pts, video_end_pts = 0, inf
     else:
         # Decode video selectively
-        timebase = video_fps / target_fps
+        timebase = video_fps / target_fps * pts_base
         video_start_pts = int(start_idx * timebase)
         video_end_pts = int((end_idx - 1) * timebase) + 1
 
@@ -257,7 +260,7 @@ def decode_video(
     frame_inds = torch.linspace(
         0, target_fps * (num_wanted_frames - 1), num_wanted_frames
     )
-    if video_fps / num_decoded_frames < target_fps / num_wanted_frames:
+    if num_decoded_frames < target_fps * (num_wanted_frames - 1):
         logger.warning(
             "More frames were asked for than are available. Last frame is repeated as fill."
         )

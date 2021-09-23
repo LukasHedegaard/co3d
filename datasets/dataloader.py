@@ -32,6 +32,10 @@ class ActionRecognitionDatasets(RideClassificationDataset):
 
     Side-effects:
         Adds self.dataloader
+             self.input_shape: Tuple[int,...]
+             self.output_shape: Tuple[int,...]
+             self.classes: List[str]
+             self.task: str
     """
 
     dataloader: ...
@@ -158,6 +162,14 @@ class ActionRecognitionDatasets(RideClassificationDataset):
         )
         self.classes = self.dataloader.classes
         self.output_shape = self.num_classes
+
+        self.task = {
+            "kinetics400": "classification",
+            "kinetics600": "classification",
+            "kinetics3": "classification",
+            "thumos14": "detection",
+        }[self.hparams.dataset]
+
         return self.dataloader
 
     def train_dataloader(self):
