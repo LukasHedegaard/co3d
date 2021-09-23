@@ -6,7 +6,7 @@ from typing import Sequence
 import torch
 from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdCyclicLrOptimizer
+from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
@@ -18,7 +18,7 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    SgdCyclicLrOptimizer,
+    SgdOneCycleOptimizer,
     TopKAccuracyMetric(1, 3, 5),
 ):
     @staticmethod
@@ -132,7 +132,7 @@ class CoX3DRide(
             name="co3d_forward_mode",
             type=str,
             default="init_frame",
-            choices=["clip", "frame", "init_frame", "clip_init_frame"],
+            choices=["clip", "frame", "init_frame", "init_clip", "clip_init_frame"],
             strategy="choice",
             description="Whether to compute clip or frame during forward. If 'clip_init_frame', the network is initialised with a clip and then frame forwards are applied.",
         )
@@ -213,24 +213,28 @@ class CoX3DRide(
         # Assuming Conv3d have stride = 1 and dilation = 1, and that no other modules delay the network.
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
 
+        if self.hparams.dataset == "thumos14":
+            self.loss = torch.nn.CrossEntropyLoss(ignore_index=21)
+
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
 
         x, y = batch[0], batch[1]
 
-        # Ensure that there are enough frames by repeating the first frame if necessary
+        # Ensure that there are enough frames
         num_init_frames = max(
             self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay
         )
         num_needed_frames = num_init_frames + self.hparams.co3d_num_forward_frames
         num_missing_frames = num_needed_frames - x.shape[2]
         if num_missing_frames > 0:
-            prepend = (
-                x[:, :, 0]
+            # Repeat the last frame
+            append = (
+                x[:, :, -1]
                 .repeat((num_missing_frames, 1, 1, 1, 1))
                 .permute(1, 2, 0, 3, 4)
             )
-            x = torch.cat([prepend, x], dim=2)
+            x = torch.cat([x, append], dim=2)
             assert x.shape[2] == num_needed_frames
 
         if self.task == "detection":
@@ -265,7 +269,7 @@ class CoX3DRide(
         if "clip" == self.hparams.co3d_forward_mode:
             result = self.module.forward(x[:, :, : self.temporal_window_size])
         elif "clip" in self.hparams.co3d_forward_mode:
-            result = self.module.forward_steps(x[:, :, : self.temporal_window_size])
+            result = self.module.forward_steps(x)
 
         # Flush state with intermediate frames
         if "init" in self.hparams.co3d_forward_mode:
