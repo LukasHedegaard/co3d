@@ -3,6 +3,7 @@ from ride import Main  # isort:skip
 from functools import partial
 from typing import Sequence
 
+import torch
 from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdCyclicLrOptimizer
@@ -130,7 +131,7 @@ class CoX3DRide(
         c.add(
             name="co3d_forward_mode",
             type=str,
-            default="frame",
+            default="init_frame",
             choices=["clip", "frame", "init_frame", "clip_init_frame"],
             strategy="choice",
             description="Whether to compute clip or frame during forward. If 'clip_init_frame', the network is initialised with a clip and then frame forwards are applied.",
@@ -139,14 +140,14 @@ class CoX3DRide(
             name="co3d_num_forward_frames",
             type=int,
             default=1,
-            description="The number of frames to forward and average over. This is unused for `co3d_forward_mode='clip'`.",
+            description="The number of frames to predict over",
         )
         c.add(
             name="co3d_forward_frame_delay",
             type=int,
             default=-1,
             strategy="choice",
-            description="Number of frame forwards prior to final prediction in 'clip_init_frame' mode. If '-1', a delay of clip_length - 1 is used",
+            description="Number of frames forwards prior to final prediction in 'clip_init_frame' mode. If '-1', a delay of clip_length - 1 is used",
         )
 
         return c
@@ -210,24 +211,50 @@ class CoX3DRide(
         self.input_shape = (dim_in, frames_per_clip, image_size, image_size)
 
         # Assuming Conv3d have stride = 1 and dilation = 1, and that no other modules delay the network.
-        receptive_field = (
-            sum(
-                [
-                    m.kernel_size[0] - 1
-                    for m in self.module.modules()
-                    if "Conv3d" in str(type(m))
-                ]
-            )
-            + self.temporal_window_size
+        logger.info(f"Model receptive field: {self.module.receptive_field} frames")
+
+    def preprocess_batch(self, batch):
+        """Overloads method in ride.Lifecycle"""
+
+        x, y = batch[0], batch[1]
+
+        # Ensure that there are enough frames by repeating the first frame if necessary
+        num_init_frames = max(
+            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay
         )
-        logger.info(f"Model receptive field: {receptive_field} frames")
+        num_needed_frames = num_init_frames + self.hparams.co3d_num_forward_frames
+        num_missing_frames = num_needed_frames - x.shape[2]
+        if num_missing_frames > 0:
+            prepend = (
+                x[:, :, 0]
+                .repeat((num_missing_frames, 1, 1, 1, 1))
+                .permute(1, 2, 0, 3, 4)
+            )
+            x = torch.cat([prepend, x], dim=2)
+            assert x.shape[2] == num_needed_frames
+
+        if self.task == "detection":
+            # Remove labels for initialisation frames
+            y = y[:, -self.hparams.co3d_num_forward_frames :]
+
+            # Collapse into batch dimension
+            y = y.reshape(-1)
+
+        batch = [x, y]
+        return batch
+
+    def clean_state_on_shape_change(self, shape):
+        if not hasattr(self, "_current_input_shape"):
+            self._current_input_shape = shape
+
+        if self._current_input_shape != shape:
+            self.module.clean_state()
 
     def forward(self, x):
-        if not hasattr(self, "_current_input_shape"):
-            self._current_input_shape = x.shape
-
-        if self._current_input_shape != x.shape:
+        if self.training:
             self.module.clean_state()
+        else:
+            self.clean_state_on_shape_change(x.shape)
 
         result = None
 
@@ -248,15 +275,8 @@ class CoX3DRide(
                 else 0
             )
             # Saturate by running example
-
-            # Heuristic choice: If no more frames are available, repeat last
-            def xi_or_last_frame(i):
-                if i >= x.shape[2]:
-                    return x[:, :, -1]
-                return x[:, :, i]
-
             for i in range(0, self.hparams.co3d_forward_frame_delay):
-                self.module.forward_step(xi_or_last_frame(start + i))
+                self.module.forward_step(x[:, :, start + i])
 
         # Compute output for last frame(s)
         if "frame" in self.hparams.co3d_forward_mode:
@@ -264,15 +284,19 @@ class CoX3DRide(
             result = self.module.forward_step(
                 x[:, :, -self.hparams.co3d_num_forward_frames]
             )
-            for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
-                result += self.module.forward_step(x[:, :, -i])
-            result /= self.hparams.co3d_num_forward_frames
+
+            if self.task == "classification":
+                for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
+                    result += self.module.forward_step(x[:, :, -i])
+                result /= self.hparams.co3d_num_forward_frames
+            elif self.task == "detection":
+                results = [result]
+                for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
+                    results.append(self.module.forward_step(x[:, :, -i]))
+
+                result = torch.cat(results)  # concat on batch dimension
 
         return result
-
-    def map_loaded_weights(self, file, loaded_state_dict):
-        # If a key doesn't start with "module", append it
-        return loaded_state_dict
 
     def warm_up(self, input_shape: Sequence[int], *args, **kwargs):
         for m in self.modules.modules():
