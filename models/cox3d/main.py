@@ -184,23 +184,30 @@ class CoX3DRide(
         self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
         self.state_dict = partial(self.module.state_dict, flatten=True)
 
-        if "clip" not in self.hparams.co3d_forward_mode:
-            self.hparams.frames_per_clip = 0
-            self.module.call_mode = "forward"
+        num_init_frames = max(
+            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
+        )
+        self.hparams.frames_per_clip = (
+            num_init_frames + self.hparams.co3d_num_forward_frames
+        )
 
-        if "frame" in self.hparams.co3d_forward_mode:
-            assert self.hparams.co3d_num_forward_frames > 0
-            self.hparams.frames_per_clip += self.hparams.co3d_num_forward_frames
-            self.module.call_mode = "forward_step"
+        # if "clip" not in self.hparams.co3d_forward_mode:
+        #     self.hparams.frames_per_clip = 0
+        #     self.module.call_mode = "forward"
 
-        if "init" in self.hparams.co3d_forward_mode:
-            if self.hparams.co3d_forward_frame_delay < 0:
-                self.hparams.co3d_forward_frame_delay = (
-                    self.temporal_window_size
-                    + 1
-                    + self.hparams.co3d_forward_frame_delay
-                )
-            self.hparams.frames_per_clip += self.hparams.co3d_forward_frame_delay
+        # if "frame" in self.hparams.co3d_forward_mode:
+        #     assert self.hparams.co3d_num_forward_frames > 0
+        #     self.hparams.frames_per_clip += self.hparams.co3d_num_forward_frames
+        #     self.module.call_mode = "forward_step"
+
+        # if "init" in self.hparams.co3d_forward_mode:
+        #     if self.hparams.co3d_forward_frame_delay < 0:
+        #         self.hparams.co3d_forward_frame_delay = (
+        #             self.temporal_window_size
+        #             + 1
+        #             + self.hparams.co3d_forward_frame_delay
+        #         )
+        #     self.hparams.frames_per_clip += self.hparams.co3d_forward_frame_delay
 
         # From ActionRecognitionDatasets
         frames_per_clip = (
@@ -223,7 +230,7 @@ class CoX3DRide(
 
         # Ensure that there are enough frames
         num_init_frames = max(
-            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay
+            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
         )
         num_needed_frames = num_init_frames + self.hparams.co3d_num_forward_frames
         num_missing_frames = num_needed_frames - x.shape[2]
@@ -265,40 +272,18 @@ class CoX3DRide(
         if "init" in self.hparams.co3d_forward_mode:
             self.module.warm_up(tuple(x[:, :, 0].shape))
 
-        # Forward whole clip to init state
-        if "clip" == self.hparams.co3d_forward_mode:
-            result = self.module.forward(x[:, :, : self.temporal_window_size])
-        elif "clip" in self.hparams.co3d_forward_mode:
-            result = self.module.forward_steps(x)
+        num_init_frames = max(
+            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
+        )
+        self.module.forward_steps(x[:, :, :num_init_frames])  # don't save
+        result = self.module.forward_steps(x[:, :, num_init_frames:])  # don't save
 
-        # Flush state with intermediate frames
-        if "init" in self.hparams.co3d_forward_mode:
-            start = (
-                self.temporal_window_size
-                if "clip" in self.hparams.co3d_forward_mode
-                else 0
-            )
-            # Saturate by running example
-            for i in range(0, self.hparams.co3d_forward_frame_delay):
-                self.module.forward_step(x[:, :, start + i])
-
-        # Compute output for last frame(s)
-        if "frame" in self.hparams.co3d_forward_mode:
-            # Average over a number of frames
-            result = self.module.forward_step(
-                x[:, :, -self.hparams.co3d_num_forward_frames]
-            )
-
-            if self.task == "classification":
-                for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
-                    result += self.module.forward_step(x[:, :, -i])
-                result /= self.hparams.co3d_num_forward_frames
-            elif self.task == "detection":
-                results = [result]
-                for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
-                    results.append(self.module.forward_step(x[:, :, -i]))
-
-                result = torch.cat(results)  # concat on batch dimension
+        if self.task == "classification":
+            result = result.mean(dim=-1)
+        elif self.task == "detection":
+            result = result.permute(0, 2, 1).reshape(-1, self.num_classes)
+        else:
+            raise ValueError(f"Unknown task {self.task}")
 
         return result
 
