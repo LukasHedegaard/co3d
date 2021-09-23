@@ -429,13 +429,19 @@ def CoX3DHead(
         ("projection", co.Linear(dim_out, num_classes, bias=True, channel_dim=1))
     )
 
+    def not_training(module, *args):
+        return not module.training
+
     modules.append(
         (
             "act",
-            {
-                "softmax": torch.nn.Softmax(dim=1),
-                "sigmoid": torch.nn.Sigmoid(),
-            }[act_func],
+            co.Conditional(
+                not_training,
+                {
+                    "softmax": torch.nn.Softmax(dim=1),
+                    "sigmoid": torch.nn.Sigmoid(),
+                }[act_func],
+            ),
         )
     )
 
