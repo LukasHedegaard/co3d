@@ -236,10 +236,11 @@ def decode_video(
 
     video_stream = container.streams.video[0]
     video_fps = float(video_stream.average_rate)
+    video_duration = container.duration / 1e6  # seconds
+
     # Some fractions are noted as 30/1, others as 30000/1001.
     # video pts are stepped according to the denominator of the frame_rate (e.g. 1 or 1001)
     pts_base = video_stream.average_rate.denominator
-    video_duration = container.duration / 1e6  # seconds
 
     if video_duration is None:
         # Decode the entire video.
@@ -261,10 +262,13 @@ def decode_video(
         0, target_fps * (num_wanted_frames - 1), num_wanted_frames
     )
     if num_decoded_frames < target_fps * (num_wanted_frames - 1):
-        logger.warning(
-            "More frames were asked for than are available. Last frame is repeated as fill."
-        )
-        frame_inds = torch.clamp(frame_inds, 0, num_decoded_frames - 1)
+        container.close()
+        return None
+
+        # logger.warning(
+        #     "More frames were asked for than are available. Last frame is repeated as fill."
+        # )
+        # frame_inds = torch.clamp(frame_inds, 0, num_decoded_frames - 1)
     frame_inds = frame_inds.long()
 
     # Convert to torch Tensor
