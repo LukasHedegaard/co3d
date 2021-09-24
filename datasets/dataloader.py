@@ -248,6 +248,8 @@ class ActionRecognitionDatasetLoader:
             shuffle=True,
             pin_memory=num_workers > 1,
             drop_last=True,
+            prefetch_factor=4,
+            persistent_workers=True,
         )
         self.val_dataloader = DataLoader(
             val_ds,
@@ -256,6 +258,8 @@ class ActionRecognitionDatasetLoader:
             shuffle=False,
             pin_memory=num_workers > 1,
             drop_last=True,
+            prefetch_factor=4,
+            persistent_workers=True,
         )
         self.test_dataloader = DataLoader(
             test_ds,
@@ -264,6 +268,8 @@ class ActionRecognitionDatasetLoader:
             shuffle=False,
             pin_memory=num_workers > 1,
             drop_last=False,
+            prefetch_factor=4,
+            persistent_workers=True,
         )
 
     @classmethod

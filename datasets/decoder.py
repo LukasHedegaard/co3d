@@ -89,7 +89,13 @@ def get_start_end_idx_centered(video_size, clip_size, clip_idx, num_clips):
 
 
 def pyav_decode_stream(
-    container, start_pts, end_pts, stream, stream_name={"video": 0}, buffer_size=0
+    container,
+    start_pts,
+    end_pts,
+    stream,
+    stream_name={"video": 0},
+    buffer_size=0,
+    seek_margin=1024,
 ):
     """
     Decode the video with PyAV decoder.
@@ -108,8 +114,8 @@ def pyav_decode_stream(
     """
     # Seeking in the stream is imprecise. Thus, seek to an ealier PTS by a
     # margin pts.
-    margin = 1024
-    seek_offset = max(start_pts - margin, 0)
+    seek_margin = 1024
+    seek_offset = max(start_pts - seek_margin, 0)
 
     container.seek(seek_offset, any_frame=False, backward=True, stream=stream)
     frames = {}

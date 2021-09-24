@@ -3,7 +3,7 @@ import random
 from math import inf
 from pathlib import Path
 from typing import Optional
-
+import math
 import av
 import numpy as np
 import torch
@@ -37,6 +37,7 @@ class Thumos14(torch.utils.data.Dataset):
         global_transform=None,
         num_retries=10,
         num_spatial_crops=1,
+        skip_short_videos=True,
         *args,
         **kwargs,
     ):
@@ -77,10 +78,12 @@ class Thumos14(torch.utils.data.Dataset):
         ], "Split '{}' not supported for Thumos14".format(split)
         if split == "validate":
             split = "val"
-            logger.info("Using test set for validation as is customary for THUMOS14.")
+            logger.info(
+                "Using test set for validation as is customary for THUMOS14 Action Detection."
+            )
         elif split == "train":
             logger.info(
-                "Using validation set for training as is customary for THUMOS14."
+                "Using validation set for training as is customary for THUMOS14 Action Detection."
             )
         self.split = split
         used_ds_split = {"train": "val", "val": "test", "test": "test"}[self.split]
@@ -92,7 +95,7 @@ class Thumos14(torch.utils.data.Dataset):
             temporal_downsampling == 6
         ), "Only temporal_downsampling = 6 is supported (corresponding to FPS = 5)"
         self.temporal_downsampling = temporal_downsampling
-        self.target_fps = 5  # = 30 / temporal_downsampling
+        self.target_fps = 30 / temporal_downsampling
         self.video_transform = video_transform
         # self.audio_transform = audio_transform
         self.label_transform = label_transform
@@ -132,6 +135,10 @@ class Thumos14(torch.utils.data.Dataset):
             # Densely sample all sub-videos of with `frames_per_clip`
             # Use positional encording instead of one-hot, since there is only one action per time-step
             vid_target = annotations[video_id]["anno"].argmax(1)
+
+            if skip_short_videos and len(vid_target) < frames_per_clip:
+                continue
+
             for start_idx, end_idx in zip(
                 range(0, len(vid_target) - frames_per_clip, step_between_clips),
                 range(frames_per_clip, len(vid_target), step_between_clips),
@@ -252,7 +259,11 @@ def decode_video(
         video_end_pts = int((end_idx - 1) * timebase) + 1
 
     frames, _ = pyav_decode_stream(
-        container, video_start_pts, video_end_pts, video_stream
+        container,
+        video_start_pts,
+        video_end_pts,
+        video_stream,
+        seek_margin=100 * pts_base,
     )
     num_decoded_frames = len(frames)
     num_wanted_frames = end_idx - start_idx
@@ -261,14 +272,14 @@ def decode_video(
     frame_inds = torch.linspace(
         0, target_fps * (num_wanted_frames - 1), num_wanted_frames
     )
-    if num_decoded_frames < target_fps * (num_wanted_frames - 1):
+
+    if num_decoded_frames < 1.5 * target_fps * (num_wanted_frames - 1):
         container.close()
         return None
 
-        # logger.warning(
-        #     "More frames were asked for than are available. Last frame is repeated as fill."
-        # )
-        # frame_inds = torch.clamp(frame_inds, 0, num_decoded_frames - 1)
+    if num_decoded_frames < target_fps * (num_wanted_frames - 1):
+        frame_inds = torch.clamp(frame_inds, 0, num_decoded_frames - 1)
+        
     frame_inds = frame_inds.long()
 
     # Convert to torch Tensor
