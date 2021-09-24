@@ -5,8 +5,8 @@ from typing import Sequence
 
 import torch
 from ride import Configs, RideModule
-from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer
+from ride.metrics import TopKAccuracyMetric, MeanAveragePrecisionMetric
+from ride.optimizers import SgdCyclicLrOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
@@ -18,8 +18,9 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    SgdOneCycleOptimizer,
+    SgdCyclicLrOptimizer,
     TopKAccuracyMetric(1, 3, 5),
+    MeanAveragePrecisionMetric,
 ):
     @staticmethod
     def configs() -> Configs:
@@ -222,6 +223,7 @@ class CoX3DRide(
 
         if self.hparams.dataset == "thumos14":
             self.loss = torch.nn.CrossEntropyLoss(ignore_index=21)
+            self.mAP_ignore_classes = [0, 21]
 
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
