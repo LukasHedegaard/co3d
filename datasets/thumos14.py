@@ -3,7 +3,6 @@ import random
 from math import inf
 from pathlib import Path
 from typing import Optional
-import math
 import av
 import numpy as np
 import torch
@@ -273,13 +272,13 @@ def decode_video(
         0, target_fps * (num_wanted_frames - 1), num_wanted_frames
     )
 
-    if num_decoded_frames < 1.5 * target_fps * (num_wanted_frames - 1):
+    if num_decoded_frames * 1.5 < target_fps * (num_wanted_frames - 1):
         container.close()
         return None
 
     if num_decoded_frames < target_fps * (num_wanted_frames - 1):
         frame_inds = torch.clamp(frame_inds, 0, num_decoded_frames - 1)
-        
+
     frame_inds = frame_inds.long()
 
     # Convert to torch Tensor
