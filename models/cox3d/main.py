@@ -5,8 +5,10 @@ from typing import Sequence
 
 import torch
 from ride import Configs, RideModule
-from ride.metrics import TopKAccuracyMetric, MeanAveragePrecisionMetric
-from ride.optimizers import SgdCyclicLrOptimizer
+from ride.metrics import MeanAveragePrecisionMetric
+
+# from ride.metrics import TopKAccuracyMetric
+from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
@@ -18,8 +20,8 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    SgdCyclicLrOptimizer,
-    TopKAccuracyMetric(1, 3, 5),
+    SgdOneCycleOptimizer,
+    # TopKAccuracyMetric(1, 3, 5),
     MeanAveragePrecisionMetric,
 ):
     @staticmethod
