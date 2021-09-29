@@ -19,6 +19,7 @@ from torchvision.transforms._transforms_video import (
 from datasets.kinetics import Kinetics
 from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
+from datasets.tvseries import TvSeries
 from datasets.video_ensemble import (
     SpatiallySamplingVideoEnsemble,
     TemporallySamplingVideoEnsemble,
@@ -47,7 +48,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             name="dataset",
             type=str,
             default="kinetics400",
-            choices=["kinetics400", "kinetics600", "kinetics3", "thumos14"],
+            choices=["kinetics400", "kinetics600", "kinetics3", "thumos14", "tvseries"],
             strategy="constant",
             description=f"Dataset name. It is assumed that these datasets are available in the DATASETS_PATH env variable ({str(DATASETS_PATH)})",
         )
@@ -168,6 +169,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics600": "classification",
             "kinetics3": "classification",
             "thumos14": "detection",
+            "tvseries": "detection",
         }[self.hparams.dataset]
 
         return self.dataloader
@@ -331,8 +333,12 @@ def train_val_test(
         Ds = Kinetics
     elif "thumos14" in data_path.lower():
         Ds = Thumos14
+    elif "tvseries" in data_path.lower():
+        Ds = TvSeries
     else:
-        raise ValueError("'root_path' must contain either 'kinetics', or 'thumos14'")
+        raise ValueError(
+            "'root_path' must contain either 'kinetics', 'thumos14', or 'tvseries'"
+        )
 
     scaled_pix_min = floor2(image_size * image_train_scale[0])
     scaled_pix_max = floor2(image_size * image_train_scale[1])

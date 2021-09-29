@@ -121,9 +121,6 @@ class Thumos14(torch.utils.data.Dataset):
         assert self.data_path.is_dir()
         self.frames_per_clip = frames_per_clip
         self.step_between_clips = step_between_clips
-        assert (
-            temporal_downsampling == 6
-        ), "Only temporal_downsampling = 6 is supported (corresponding to FPS = 5)"
         self.temporal_downsampling = temporal_downsampling
         self.target_fps = 30 / temporal_downsampling
         self.video_transform = video_transform
@@ -135,20 +132,8 @@ class Thumos14(torch.utils.data.Dataset):
         self.num_spatial_crops = num_spatial_crops
         self.num_retries = num_retries
 
-        try:
-            prepare_labels(root, annotation_path, self.target_fps)
-        except Exception as e:
-            print(e)
-            pass
+        prepare_labels(used_ds_split, root, annotation_path, self.target_fps)
 
-        # Prepare annotations. Here we assume a pickled annotation i available, which has the structure, e.g.:
-        # ds['video_validation_0000266']['anno'][360:365,:] =
-        # array([[1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-        #        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-        #        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-        #        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-        #        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
-        # ```
         annotation_file = (
             Path(annotation_path) / f"{used_ds_split}_{self.target_fps}fps.pickle"
         )
@@ -198,30 +183,7 @@ class Thumos14(torch.utils.data.Dataset):
 
     @property
     def classes(self):
-        return [
-            "None",
-            "BaseballPitch",
-            "BasketballDunk",
-            "Billiards",
-            "CleanAndJerk",
-            "CliffDiving",
-            "CricketBowling",
-            "CricketShot",
-            "Diving",
-            "FrisbeeCatch",
-            "GolfSwing",
-            "HammerThrow",
-            "HighJump",
-            "JavelinThrow",
-            "LongJump",
-            "PoleVault",
-            "Shotput",
-            "SoccerPenalty",
-            "TennisSwing",
-            "ThrowDiscus",
-            "VolleyballSpiking",
-            "Ambiguous",
-        ]
+        return CLASSES
 
     def __getitem__(self, index):
         video = None
@@ -287,7 +249,7 @@ def decode_video(
 
     # Some fractions are noted as 30/1, others as 30000/1001.
     # video pts are stepped according to the denominator of the frame_rate (e.g. 1 or 1001)
-    pts_base = video_stream.average_rate.denominator
+    pts_base = (video_stream.average_rate * video_stream.time_base).denominator
 
     if video_duration is None:
         # Decode the entire video.
@@ -347,65 +309,63 @@ def get_default_labels(video_path, target_fps: float):
     return (video_id, default_label)
 
 
-def prepare_labels(data_path: str, annotation_path: str, target_fps: float):
-    for split in ["val", "test"]:
-        parsed_annotation_path = (
-            Path(annotation_path) / f"{split}_{target_fps}fps.pickle"
-        )
-        if parsed_annotation_path.exists():
-            continue
+def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps: float):
 
-        logger.info(f"Preparing THUMOS-14 labels for {split} split")
+    parsed_annotation_path = Path(annotation_path) / f"{split}_{target_fps}fps.pickle"
+    if parsed_annotation_path.exists():
+        return
 
-        # Pre-fill labels with zeros
-        video_paths = list((Path(data_path) / split).glob("*.mp4"))
+    logger.info(f"Preparing THUMOS-14 labels for {split} split")
 
-        # Single thread
-        # label_list = []
-        # for vp in tqdm(video_paths, desc="Checking video durations"):
-        #     lbls = get_default_labels(vp, target_fps)
-        #     if lbls is not None:
-        #         label_list.append(lbls)
-        # label_dict = dict(label_list)
+    # Pre-fill labels with zeros
+    video_paths = list((Path(data_path) / split).glob("*.mp4"))
 
-        # Multi-thread
-        label_dict = dict(
-            [
-                res
-                for res in process_map(
-                    partial(
-                        get_default_labels,
-                        target_fps=target_fps,
-                    ),
-                    video_paths,
-                    chunksize=max(10, NUM_CPU // 4),
-                    desc="Checking video durations",
+    # Single thread
+    # label_list = []
+    # for vp in tqdm(video_paths, desc="Checking video durations"):
+    #     lbls = get_default_labels(vp, target_fps)
+    #     if lbls is not None:
+    #         label_list.append(lbls)
+    # label_dict = dict(label_list)
+
+    # Multi-thread
+    label_dict = dict(
+        [
+            res
+            for res in process_map(
+                partial(
+                    get_default_labels,
+                    target_fps=target_fps,
+                ),
+                video_paths,
+                chunksize=max(10, NUM_CPU // 4),
+                desc="Checking video durations",
+            )
+            if res is not None
+        ]
+    )
+
+    # Iterate through annotations and update
+    class2idx = {c: i for i, c in enumerate(CLASSES)}
+
+    anno_paths = list((Path(annotation_path) / split).glob(f"*_{split}.txt"))
+    for anno_path in tqdm(anno_paths, desc="Parsing annotations"):
+        class_name = anno_path.stem.split("_")[0]
+        class_index = class2idx[class_name]
+        with open(anno_path, mode="r") as f:
+            for line in f.readlines():
+                line = line.split(" ")
+                video_id = line[0]
+                start = round(float(line[-2]) * target_fps)
+                stop = min(
+                    round(float(line[-1].strip()) * target_fps),
+                    len(label_dict[video_id]),
                 )
-                if res is not None
-            ]
-        )
+                label_dict[video_id][start:stop] = [
+                    class_index for _ in range(stop - start)
+                ]
 
-        # Iterate through annotations and update
-        class2idx = {c: i for i, c in enumerate(CLASSES)}
-
-        anno_paths = list((Path(annotation_path) / split).glob(f"*_{split}.txt"))
-        for anno_path in tqdm(anno_paths, desc="Parsing annotations"):
-            class_name = anno_path.stem.split("_")[0]
-            class_index = class2idx[class_name]
-            with open(anno_path, mode="r") as f:
-                for line in f.readlines():
-                    line = line.split(" ")
-                    video_id = line[0]
-                    start = round(float(line[-2]) * target_fps)
-                    stop = min(
-                        round(float(line[-1].strip()) * target_fps),
-                        len(label_dict[video_id]),
-                    )
-                    label_dict[video_id][start:stop] = [
-                        class_index for _ in range(stop - start)
-                    ]
-
-        # Save annotatio-data
-        with open(parsed_annotation_path, "wb") as file:
-            logger.info(f"Saving parsed annotations to {parsed_annotation_path}")
-            pickle.dump(label_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
+    # Save annotatio-data
+    with open(parsed_annotation_path, "wb") as file:
+        logger.info(f"Saving parsed annotations to {parsed_annotation_path}")
+        pickle.dump(label_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
