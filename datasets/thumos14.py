@@ -1,20 +1,50 @@
+import math
 import pickle
 import random
+from functools import partial
 from math import inf
 from pathlib import Path
 from typing import Optional
+
 import av
 import numpy as np
 import torch
 import torch.utils.data
 from joblib import Memory
-from ride.utils.env import CACHE_PATH
+from ride.utils.env import CACHE_PATH, NUM_CPU
 from ride.utils.logging import getLogger
+from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from datasets.decoder import pyav_decode_stream
 
 logger = getLogger(__name__)
 cache = Memory(CACHE_PATH, verbose=1).cache
+
+CLASSES = [
+    "None",
+    "BaseballPitch",
+    "BasketballDunk",
+    "Billiards",
+    "CleanAndJerk",
+    "CliffDiving",
+    "CricketBowling",
+    "CricketShot",
+    "Diving",
+    "FrisbeeCatch",
+    "GolfSwing",
+    "HammerThrow",
+    "HighJump",
+    "JavelinThrow",
+    "LongJump",
+    "PoleVault",
+    "Shotput",
+    "SoccerPenalty",
+    "TennisSwing",
+    "ThrowDiscus",
+    "VolleyballSpiking",
+    "Ambiguous",
+]
 
 
 class Thumos14(torch.utils.data.Dataset):
@@ -37,6 +67,7 @@ class Thumos14(torch.utils.data.Dataset):
         num_retries=10,
         num_spatial_crops=1,
         skip_short_videos=True,
+        skip_clips_with_no_actions=True,
         *args,
         **kwargs,
     ):
@@ -104,6 +135,12 @@ class Thumos14(torch.utils.data.Dataset):
         self.num_spatial_crops = num_spatial_crops
         self.num_retries = num_retries
 
+        try:
+            prepare_labels(root, annotation_path, self.target_fps)
+        except Exception as e:
+            print(e)
+            pass
+
         # Prepare annotations. Here we assume a pickled annotation i available, which has the structure, e.g.:
         # ds['video_validation_0000266']['anno'][360:365,:] =
         # array([[1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -112,7 +149,9 @@ class Thumos14(torch.utils.data.Dataset):
         #        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
         #        [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
         # ```
-        annotation_file = Path(annotation_path) / f"{used_ds_split}.pickle"
+        annotation_file = (
+            Path(annotation_path) / f"{used_ds_split}_{self.target_fps}fps.pickle"
+        )
         assert annotation_file.exists()
 
         with open(annotation_file, "rb") as f:
@@ -120,11 +159,8 @@ class Thumos14(torch.utils.data.Dataset):
 
         # Validate annotations file contents
         test_key = next(iter(annotations))
-        assert "anno" in annotations[test_key]
-        test_value = annotations[test_key]["anno"]
-        assert type(test_value) == np.ndarray
-        assert test_value.shape[1] == 22  # 20 classes + "ambiguous" + "none"
-        assert test_value[0].sum() == 1.0  # only a single class per time-step
+        test_value = annotations[test_key]
+        assert type(test_value) == list
 
         # Used for multi-crop testing
         num_clips = num_spatial_crops if self.split in ["test"] else 1
@@ -133,7 +169,7 @@ class Thumos14(torch.utils.data.Dataset):
         for video_idx, video_id in enumerate(annotations.keys()):
             # Densely sample all sub-videos of with `frames_per_clip`
             # Use positional encording instead of one-hot, since there is only one action per time-step
-            vid_target = annotations[video_id]["anno"].argmax(1)
+            vid_target = annotations[video_id]
 
             if skip_short_videos and len(vid_target) < frames_per_clip:
                 continue
@@ -143,6 +179,11 @@ class Thumos14(torch.utils.data.Dataset):
                 range(frames_per_clip, len(vid_target), step_between_clips),
             ):
                 clip_targets = vid_target[start_idx:end_idx]
+
+                if skip_clips_with_no_actions:
+                    if all([ct == 0 for ct in clip_targets]):
+                        continue
+
                 for _ in range(num_clips):
                     self._clip_meta.append(
                         (video_idx, video_id, start_idx, end_idx, clip_targets)
@@ -289,3 +330,82 @@ def decode_video(
     container.close()
 
     return frames
+
+
+def get_default_labels(video_path, target_fps: float):
+    try:
+        container = av.open(str(video_path))
+    except Exception as e:
+        logger.info("Failed to load video from {} with error {}".format(video_path, e))
+        return None
+
+    video_duration = container.duration / 1e6  # seconds
+    container.close()
+
+    video_id = video_path.stem
+    default_label = [0 for _ in range(math.ceil(video_duration * target_fps))]
+    return (video_id, default_label)
+
+
+def prepare_labels(data_path: str, annotation_path: str, target_fps: float):
+    for split in ["val", "test"]:
+        parsed_annotation_path = (
+            Path(annotation_path) / f"{split}_{target_fps}fps.pickle"
+        )
+        if parsed_annotation_path.exists():
+            continue
+
+        logger.info(f"Preparing THUMOS-14 labels for {split} split")
+
+        # Pre-fill labels with zeros
+        video_paths = list((Path(data_path) / split).glob("*.mp4"))
+
+        # Single thread
+        # label_list = []
+        # for vp in tqdm(video_paths, desc="Checking video durations"):
+        #     lbls = get_default_labels(vp, target_fps)
+        #     if lbls is not None:
+        #         label_list.append(lbls)
+        # label_dict = dict(label_list)
+
+        # Multi-thread
+        label_dict = dict(
+            [
+                res
+                for res in process_map(
+                    partial(
+                        get_default_labels,
+                        target_fps=target_fps,
+                    ),
+                    video_paths,
+                    chunksize=max(10, NUM_CPU // 4),
+                    desc="Checking video durations",
+                )
+                if res is not None
+            ]
+        )
+
+        # Iterate through annotations and update
+        class2idx = {c: i for i, c in enumerate(CLASSES)}
+
+        anno_paths = list((Path(annotation_path) / split).glob(f"*_{split}.txt"))
+        for anno_path in tqdm(anno_paths, desc="Parsing annotations"):
+            class_name = anno_path.stem.split("_")[0]
+            class_index = class2idx[class_name]
+            with open(anno_path, mode="r") as f:
+                for line in f.readlines():
+                    line = line.split(" ")
+                    video_id = line[0]
+                    start = round(float(line[-2]) * target_fps)
+                    stop = min(
+                        round(float(line[-1].strip()) * target_fps),
+                        len(label_dict[video_id]),
+                    )
+                    label_dict[video_id][start:stop] = [
+                        class_index for _ in range(stop - start)
+                    ]
+
+        # Save annotatio-data
+        with open(parsed_annotation_path, "wb") as file:
+            logger.info(f"Saving parsed annotations to {parsed_annotation_path}")
+            pickle.dump(label_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
