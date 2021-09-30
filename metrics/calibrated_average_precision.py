@@ -1,4 +1,5 @@
 import math
+from typing import Sequence
 
 import torch
 from ride.metrics import (
@@ -12,7 +13,10 @@ from torch import Tensor
 
 
 def mean_calibrated_average_precision(
-    preds: Tensor, targets: Tensor, skip_classes={}, empty_target_action="skip"
+    preds: Tensor,
+    targets: Tensor,
+    skip_classes: Sequence[int] = [],
+    empty_target_action="skip",
 ):
     """Computes the mean calibrated average precision as defined in "Online Action Detection" [De Geest et al.]
 
@@ -101,11 +105,11 @@ class CalibratedMeanAveragePrecisionMetric(MetricMixin):
 
     def __init__(self, *args, **kwargs):
         if isinstance(self.hparams.mean_average_precision_skip_classes, str):
-            self.hparams.mean_average_precision_skip_classes = {
+            self.hparams.mean_average_precision_skip_classes = [
                 int(i)
                 for i in self.hparams.mean_average_precision_skip_classes.split(",")
                 if len(i)
-            }
+            ]
 
     @classmethod
     def _metrics(cls):
