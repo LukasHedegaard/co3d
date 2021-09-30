@@ -5,13 +5,13 @@ from typing import Sequence
 
 import torch
 from ride import Configs, RideModule
-from ride.metrics import MeanAveragePrecisionMetric
 
 # from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
+from metrics import CalibratedMeanAveragePrecisionMetric
 from models.cox3d.modules.x3d import CoX3D
 
 logger = getLogger("CoX3D")
@@ -22,7 +22,7 @@ class CoX3DRide(
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
     # TopKAccuracyMetric(1, 3, 5),
-    MeanAveragePrecisionMetric,
+    CalibratedMeanAveragePrecisionMetric,
 ):
     @staticmethod
     def configs() -> Configs:
@@ -259,11 +259,9 @@ class CoX3DRide(
         return batch
 
     def clean_state_on_shape_change(self, shape):
-        if not hasattr(self, "_current_input_shape"):
-            self._current_input_shape = shape
-
-        if self._current_input_shape != shape:
+        if getattr(self, "_current_input_shape", None) != shape:
             self.module.clean_state()
+            self._current_input_shape = shape
 
     def forward(self, x):
         if self.training:
@@ -274,7 +272,7 @@ class CoX3DRide(
         result = None
 
         if "init" in self.hparams.co3d_forward_mode:
-            self.module.warm_up(tuple(x[:, :, 0].shape))
+            self.warm_up(tuple(x[:, :, 0].shape))
 
         num_init_frames = max(
             self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
@@ -292,7 +290,7 @@ class CoX3DRide(
         return result
 
     def warm_up(self, input_shape: Sequence[int], *args, **kwargs):
-        for m in self.modules.modules():
+        for m in self.module.modules():
             if hasattr(m, "state_index"):
                 m.state_index = 0
 
