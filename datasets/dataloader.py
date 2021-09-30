@@ -313,8 +313,8 @@ def train_val_test(
     test_ensemble_temporal_clips=10,
     test_ensemble_spatial_sampling_strategy="diagonal",
     image_train_scale=(
-        1 / 0.7 * 0.8,
-        1 / 0.7,
+        0.875,
+        1.25,
     ),  # corresponds to 0.875 (crop) : 1 (min scale) : 1.25 (max scale)
     normalisation_style="imagenet",
 ) -> Tuple[Dataset, Dataset, Dataset]:
@@ -340,17 +340,21 @@ def train_val_test(
             "'root_path' must contain either 'kinetics', 'thumos14', or 'tvseries'"
         )
 
-    scaled_pix_min = floor2(image_size * image_train_scale[0])
-    scaled_pix_max = floor2(image_size * image_train_scale[1])
-    assert scaled_pix_max > scaled_pix_min and scaled_pix_min > image_size
+    train_crop_pix = floor2(image_size * image_train_scale[0])
+    train_scale_pix_min = image_size
+    train_scale_pix_max = floor2(image_size * image_train_scale[1])
+    assert (
+        train_scale_pix_max > train_scale_pix_min
+        and train_scale_pix_min > train_crop_pix
+    )
 
     train_transforms = Compose(
         [
             ToTensorVideo(),
             RandomShortSideScaleJitterVideo(
-                min_size=scaled_pix_min, max_size=scaled_pix_max
+                min_size=train_scale_pix_min, max_size=train_scale_pix_max
             ),
-            RandomCropVideo(image_size),
+            RandomCropVideo(train_crop_pix),
             RandomHorizontalFlipVideo(),
             NormalizeVideo(mean=MEAN, std=STD),
         ]
