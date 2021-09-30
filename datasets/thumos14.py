@@ -67,7 +67,7 @@ class Thumos14(torch.utils.data.Dataset):
         num_retries=10,
         num_spatial_crops=1,
         skip_short_videos=True,
-        skip_clips_with_no_actions=False,
+        skip_clips_with_no_actions=True,
         *args,
         **kwargs,
     ):

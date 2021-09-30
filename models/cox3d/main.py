@@ -7,7 +7,7 @@ import torch
 from ride import Configs, RideModule
 
 # from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer, SgdCyclicLrOptimizer
+from ride.optimizers import SgdCyclicLrOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
@@ -20,7 +20,6 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    # SgdOneCycleOptimizer,
     SgdCyclicLrOptimizer,
     # TopKAccuracyMetric(1, 3, 5),
     CalibratedMeanAveragePrecisionMetric,
