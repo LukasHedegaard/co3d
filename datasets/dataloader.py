@@ -60,6 +60,13 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             description="Dataset path. If None, a default path will be inferred from the choice of the 'dataset' and 'dataset_version' parameters.",
         )
         c.add(
+            name="dataloader_prefetch_factor",
+            type=int,
+            default=2,
+            strategy="constant",
+            description="Dataloader prefetch_factor.",
+        )
+        c.add(
             name="frames_per_clip",
             type=int,
             default=32,
@@ -206,6 +213,7 @@ class ActionRecognitionDatasetLoader:
         test_ensemble_temporal_clips=10,
         test_ensemble_spatial_sampling_strategy="diagonal",
         normalisation_style="imagenet",
+        dataloader_prefetch_factor=2,
     ):
         if dataset_path:
             root_path = Path(dataset_path)
@@ -250,7 +258,7 @@ class ActionRecognitionDatasetLoader:
             shuffle=True,
             pin_memory=num_workers > 1,
             drop_last=True,
-            prefetch_factor=4,
+            prefetch_factor=dataloader_prefetch_factor,
             persistent_workers=True,
         )
         self.val_dataloader = DataLoader(
@@ -260,7 +268,7 @@ class ActionRecognitionDatasetLoader:
             shuffle=False,
             pin_memory=num_workers > 1,
             drop_last=True,
-            prefetch_factor=4,
+            prefetch_factor=dataloader_prefetch_factor,
             persistent_workers=True,
         )
         self.test_dataloader = DataLoader(
@@ -270,7 +278,7 @@ class ActionRecognitionDatasetLoader:
             shuffle=False,
             pin_memory=num_workers > 1,
             drop_last=False,
-            prefetch_factor=4,
+            prefetch_factor=dataloader_prefetch_factor,
             persistent_workers=True,
         )
 
@@ -296,6 +304,7 @@ class ActionRecognitionDatasetLoader:
             test_ensemble_temporal_clips=args.test_ensemble_temporal_clips,
             test_ensemble_spatial_sampling_strategy=args.test_ensemble_spatial_sampling_strategy,
             normalisation_style=args.normalisation_style,
+            dataloader_prefetch_factor=args.dataloader_prefetch_factor,
         )
 
 
