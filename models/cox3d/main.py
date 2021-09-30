@@ -7,7 +7,7 @@ import torch
 from ride import Configs, RideModule
 
 # from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer
+from ride.optimizers import SgdOneCycleOptimizer, SgdCyclicLrOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
@@ -20,7 +20,8 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    SgdOneCycleOptimizer,
+    # SgdOneCycleOptimizer,
+    SgdCyclicLrOptimizer,
     # TopKAccuracyMetric(1, 3, 5),
     CalibratedMeanAveragePrecisionMetric,
 ):
@@ -264,10 +265,8 @@ class CoX3DRide(
             self._current_input_shape = shape
 
     def forward(self, x):
-        if self.training:
+        if not hasattr(self.hparams, "profile"):
             self.module.clean_state()
-        else:
-            self.clean_state_on_shape_change(x.shape)
 
         result = None
 
