@@ -152,6 +152,22 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             choices=["imagenet", "feichtenhofer", "kopuklu"],
             description="The style of normalisation, i.e. choice of mean and std.",
         )
+        c.add(
+            name="rand_augment_magnitude",
+            type=int,
+            default=9,
+            strategy="uniform",
+            choices=[0, 25],
+            description="RandAugment magnitude.",
+        )
+        c.add(
+            name="rand_augment_num_layers",
+            type=int,
+            default=2,
+            strategy="uniform",
+            choices=[1, 6],
+            description="RandAugment number of transorm layers.",
+        )
         return c
 
     def __init__(self, hparams):
@@ -213,6 +229,8 @@ class ActionRecognitionDatasetLoader:
         test_ensemble_spatial_sampling_strategy="diagonal",
         normalisation_style="imagenet",
         dataloader_prefetch_factor=2,
+        rand_augment_magnitude=9,
+        rand_augment_num_layers=2,
     ):
         if dataset_path:
             root_path = Path(dataset_path)
@@ -244,6 +262,8 @@ class ActionRecognitionDatasetLoader:
             test_ensemble_temporal_clips=test_ensemble_temporal_clips,
             test_ensemble_spatial_sampling_strategy=test_ensemble_spatial_sampling_strategy,
             normalisation_style=normalisation_style,
+            rand_augment_magnitude=rand_augment_magnitude,
+            rand_augment_num_layers=rand_augment_num_layers,
         )
 
         self.classes: List[str] = getattr(test_ds, "classes") or []
@@ -304,6 +324,8 @@ class ActionRecognitionDatasetLoader:
             test_ensemble_spatial_sampling_strategy=args.test_ensemble_spatial_sampling_strategy,
             normalisation_style=args.normalisation_style,
             dataloader_prefetch_factor=args.dataloader_prefetch_factor,
+            rand_augment_magnitude=args.rand_augment_magnitude,
+            rand_augment_num_layers=args.rand_augment_num_layers,
         )
 
 
@@ -325,6 +347,8 @@ def train_val_test(
         1.25,
     ),  # corresponds to 0.875 (crop) : 1 (min scale) : 1.25 (max scale)
     normalisation_style="imagenet",
+    rand_augment_magnitude=9,
+    rand_augment_num_layers=2,
 ) -> Tuple[Dataset, Dataset, Dataset]:
 
     MEAN, STD = {
@@ -362,7 +386,7 @@ def train_val_test(
             RandomShortSideScaleJitterVideo(
                 min_size=train_scale_pix_min, max_size=train_scale_pix_max
             ),
-            RandAugment(),
+            RandAugment(rand_augment_magnitude, rand_augment_num_layers),
             CenterCropVideo(image_size),
             NormalizeVideo(mean=MEAN, std=STD),
         ]
