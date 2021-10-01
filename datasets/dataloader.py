@@ -11,10 +11,9 @@ from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
     NormalizeVideo,
-    RandomCropVideo,
-    RandomHorizontalFlipVideo,
     ToTensorVideo,
 )
+from pytorchvideo.transforms import RandAugment
 
 from datasets.kinetics import Kinetics
 from datasets.thumos14 import Thumos14
@@ -363,13 +362,13 @@ def train_val_test(
             RandomShortSideScaleJitterVideo(
                 min_size=train_scale_pix_min, max_size=train_scale_pix_max
             ),
-            RandomCropVideo(train_crop_pix),
-            RandomHorizontalFlipVideo(),
+            RandAugment(),
+            CenterCropVideo(image_size),
             NormalizeVideo(mean=MEAN, std=STD),
         ]
     )
 
-    test_transforms = Compose(
+    eval_transforms = Compose(
         [
             ToTensorVideo(),
             RandomShortSideScaleJitterVideo(min_size=image_size, max_size=image_size),
@@ -401,7 +400,7 @@ def train_val_test(
         fold=fold,
         split="val",
         val_split=val_split_pct,
-        video_transform=test_transforms,
+        video_transform=eval_transforms,
         label_transform=None,
         global_transform=discard_audio,
     )
@@ -415,7 +414,7 @@ def train_val_test(
             temporal_downsampling=temporal_downsampling,
             fold=fold,
             split="test",
-            video_transform=test_transforms,
+            video_transform=eval_transforms,
             label_transform=None,
             global_transform=discard_audio,
         )
