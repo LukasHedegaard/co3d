@@ -77,8 +77,12 @@ def mean_calibrated_average_precision(
         classwise_AP = [c for c in classwise_AP if not math.isnan(c)]
         classwise_cAP = [c for c in classwise_cAP if not math.isnan(c)]
 
-    mAP = sum(classwise_AP) / len(classwise_AP)
-    cmAP = sum(classwise_cAP) / len(classwise_cAP)
+    if len(classwise_AP) > 0:
+        mAP = sum(classwise_AP) / len(classwise_AP)
+        cmAP = sum(classwise_cAP) / len(classwise_cAP)
+    else:
+        mAP = empty
+        cmAP = empty
 
     return mAP, cmAP, classwise_AP, classwise_cAP
 
