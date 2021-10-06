@@ -1,1 +1,1 @@
-from .multi_ce import MultiCrossEntropyLoss  # noqa: F401
+from .ce import LabelSmoothingCrossEntropy, MultiCrossEntropyLoss  # noqa: F401

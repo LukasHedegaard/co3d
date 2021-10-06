@@ -7,10 +7,11 @@ import torch
 from ride import Configs, RideModule
 
 # from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdCyclicLrOptimizer
+from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
+from losses import LabelSmoothingCrossEntropy
 from metrics import CalibratedMeanAveragePrecisionMetric
 from models.cox3d.modules.x3d import CoX3D
 
@@ -20,7 +21,7 @@ logger = getLogger("CoX3D")
 class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
-    SgdCyclicLrOptimizer,
+    SgdOneCycleOptimizer,
     # TopKAccuracyMetric(1, 3, 5),
     CalibratedMeanAveragePrecisionMetric,
 ):
@@ -224,7 +225,7 @@ class CoX3DRide(
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
 
         if self.hparams.dataset == "thumos14":
-            self.loss = torch.nn.CrossEntropyLoss(ignore_index=21)
+            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_index=21)
             self.mAP_ignore_classes = [0, 21]
 
     def preprocess_batch(self, batch):
