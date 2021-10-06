@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Union
 
 import torch
 import torch.nn.functional as F
@@ -41,11 +41,13 @@ class LabelSmoothingCrossEntropy(nn.Module):
     to include ignore_classes
     """
 
-    def __init__(self, smoothing=0.1, ignore_classes: Sequence[int] = []):
+    def __init__(self, smoothing=0.1, ignore_classes: Union[int, Sequence[int]] = []):
         super(LabelSmoothingCrossEntropy, self).__init__()
         assert smoothing < 1.0
         self.smoothing = smoothing
         self.confidence = 1.0 - smoothing
+        if isinstance(ignore_classes, int):
+            ignore_classes = [ignore_classes]
         assert all(
             isinstance(i, int) for i in ignore_classes
         ), "Ignore_classes should only contain integers."

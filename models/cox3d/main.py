@@ -225,7 +225,7 @@ class CoX3DRide(
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
 
         if self.hparams.dataset == "thumos14":
-            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_index=21)
+            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_classes=21)
             self.mAP_ignore_classes = [0, 21]
 
     def preprocess_batch(self, batch):
