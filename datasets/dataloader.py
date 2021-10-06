@@ -156,7 +156,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
         c.add(
             name="rand_augment_magnitude",
             type=int,
-            default=9,
+            default=7,
             strategy="uniform",
             choices=[0, 25],
             description="RandAugment magnitude.",
