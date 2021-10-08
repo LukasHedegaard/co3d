@@ -167,12 +167,18 @@ class CalibratedMeanAveragePrecisionMetric(MetricMixin):
         self, preds: Tensor, targets: Tensor, *args, **kwargs
     ) -> MetricDict:
         return _formatted_mean_calibrated_average_precision(
-            preds, targets, class_names=getattr(self, "classes", [])
+            preds,
+            targets,
+            skip_classes=self.hparams.mean_average_precision_skip_classes,
+            class_names=getattr(self, "classes", []),
         )
 
     def metrics_epoch(
         self, preds: Tensor, targets: Tensor, *args, **kwargs
     ) -> MetricDict:
         return _formatted_mean_calibrated_average_precision(
-            preds, targets, class_names=getattr(self, "classes", [])
+            preds,
+            targets,
+            skip_classes=self.hparams.mean_average_precision_skip_classes,
+            class_names=getattr(self, "classes", []),
         )
