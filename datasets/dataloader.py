@@ -174,6 +174,9 @@ class ActionRecognitionDatasets(RideClassificationDataset):
     def __init__(self, hparams):
         self.prepare_data()
 
+    def on_init_end(self, hparams):
+        self.prepare_data()
+
     def prepare_data(self):
         self.dataloader = ActionRecognitionDatasetLoader.from_argparse_args(
             self.hparams
@@ -198,7 +201,6 @@ class ActionRecognitionDatasets(RideClassificationDataset):
         return self.dataloader
 
     def train_dataloader(self):
-        self.prepare_data()
         return self.dataloader.train_dataloader
 
     def val_dataloader(self):
