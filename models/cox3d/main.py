@@ -6,7 +6,7 @@ from typing import Sequence
 import torch
 from ride import Configs, RideModule
 
-# from ride.metrics import TopKAccuracyMetric
+from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
@@ -22,7 +22,7 @@ class CoX3DRide(
     RideModule,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
-    # TopKAccuracyMetric(1, 3, 5),
+    TopKAccuracyMetric(1),
     CalibratedMeanAveragePrecisionMetric,
 ):
     @staticmethod
@@ -183,6 +183,7 @@ class CoX3DRide(
             self.hparams.co3d_temporal_fill,
             se_scope="frame",
         )
+        self.module.call_mode = "forward_steps"
 
         # Ensure that state-dict is flattened
         self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
@@ -250,6 +251,10 @@ class CoX3DRide(
             assert x.shape[2] == num_needed_frames
 
         if self.task == "detection":
+            if num_missing_frames > 0:
+                append = y[:, -1].repeat((num_missing_frames, 1)).permute(1, 0)
+                y = torch.cat([y, append], dim=1)
+
             # Remove labels for initialisation frames
             y = y[:, -self.hparams.co3d_num_forward_frames :]
 
@@ -276,8 +281,8 @@ class CoX3DRide(
         num_init_frames = max(
             self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
         )
-        self.module.forward_steps(x[:, :, :num_init_frames])  # don't save
-        result = self.module.forward_steps(x[:, :, num_init_frames:])  # don't save
+        self.module(x[:, :, :num_init_frames])  # = forward_steps don't save
+        result = self.module(x[:, :, num_init_frames:])  # = forward_steps
 
         if self.task == "classification":
             result = result.mean(dim=-1)
