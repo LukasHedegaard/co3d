@@ -153,6 +153,13 @@ class CoX3DRide(
             strategy="choice",
             description="Number of frames forwards prior to final prediction in 'clip_init_frame' mode. If '-1', a delay of clip_length - 1 is used",
         )
+        c.add(
+            name="co3d_forward_prediction_delay",
+            type=int,
+            default=0,
+            strategy="choice",
+            description="Number of steps to delay the prediction relative to the frames",
+        )
 
         return c
 
@@ -193,26 +200,10 @@ class CoX3DRide(
             self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
         )
         self.hparams.frames_per_clip = (
-            num_init_frames + self.hparams.co3d_num_forward_frames
+            num_init_frames
+            + self.hparams.co3d_num_forward_frames
+            + self.hparams.co3d_forward_prediction_delay
         )
-
-        # if "clip" not in self.hparams.co3d_forward_mode:
-        #     self.hparams.frames_per_clip = 0
-        #     self.module.call_mode = "forward"
-
-        # if "frame" in self.hparams.co3d_forward_mode:
-        #     assert self.hparams.co3d_num_forward_frames > 0
-        #     self.hparams.frames_per_clip += self.hparams.co3d_num_forward_frames
-        #     self.module.call_mode = "forward_step"
-
-        # if "init" in self.hparams.co3d_forward_mode:
-        #     if self.hparams.co3d_forward_frame_delay < 0:
-        #         self.hparams.co3d_forward_frame_delay = (
-        #             self.temporal_window_size
-        #             + 1
-        #             + self.hparams.co3d_forward_frame_delay
-        #         )
-        #     self.hparams.frames_per_clip += self.hparams.co3d_forward_frame_delay
 
         # From ActionRecognitionDatasets
         frames_per_clip = (
@@ -230,9 +221,9 @@ class CoX3DRide(
                 self.dataloader.test_dataloader.dataset.class_counts, dtype=torch.float
             )
             class_weights = class_counts.sum() / len(class_counts) / class_counts
+            class_weights[class_counts == 0] = 1.0
             self.loss = torch.nn.CrossEntropyLoss(class_weights, ignore_index=21)
             # self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_classes=21)
-            self.mAP_ignore_classes = [0, 21]
             self.hparams.mean_average_precision_skip_classes = [0, 21]
         elif self.hparams.dataset == "tvseries":
             self.loss = LabelSmoothingCrossEntropy(smoothing=0.1)
@@ -242,6 +233,8 @@ class CoX3DRide(
         """Overloads method in ride.Lifecycle"""
 
         x, y = batch[0], batch[1]
+        x = x[:, :, : -self.hparams.co3d_forward_prediction_delay or None]
+        y = y[:, self.hparams.co3d_forward_prediction_delay :]
 
         # Ensure that there are enough frames
         num_init_frames = max(
