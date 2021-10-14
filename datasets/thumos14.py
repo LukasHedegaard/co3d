@@ -67,7 +67,7 @@ class Thumos14(torch.utils.data.Dataset):
         num_retries=10,
         num_spatial_crops=1,
         skip_short_videos=True,
-        skip_clips_with_no_actions=True,
+        skip_clips_with_no_actions=False,
         *args,
         **kwargs,
     ):
@@ -150,6 +150,7 @@ class Thumos14(torch.utils.data.Dataset):
         # Used for multi-crop testing
         num_clips = num_spatial_crops if self.split in ["test"] else 1
 
+        self.class_counts = [0 for _ in range(len(self.classes))]
         self._clip_meta = []  # (video_id, start_idx, end_idx, clip_targets)
         for video_idx, video_id in enumerate(annotations.keys()):
             # Densely sample all sub-videos of with `frames_per_clip`
@@ -168,6 +169,9 @@ class Thumos14(torch.utils.data.Dataset):
                 if skip_clips_with_no_actions:
                     if all([ct == 0 for ct in clip_targets]):
                         continue
+
+                for ct in clip_targets:
+                    self.class_counts[ct] += 1
 
                 for _ in range(num_clips):
                     self._clip_meta.append(

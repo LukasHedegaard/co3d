@@ -226,8 +226,17 @@ class CoX3DRide(
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
 
         if self.hparams.dataset == "thumos14":
-            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_classes=21)
+            class_counts = torch.tensor(
+                self.dataloader.test_dataloader.dataset.class_counts, dtype=torch.float
+            )
+            class_weights = class_counts.sum() / len(class_counts) / class_counts
+            self.loss = torch.nn.CrossEntropyLoss(class_weights, ignore_index=21)
+            # self.loss = LabelSmoothingCrossEntropy(smoothing=0.1, ignore_classes=21)
             self.mAP_ignore_classes = [0, 21]
+            self.hparams.mean_average_precision_skip_classes = [0, 21]
+        elif self.hparams.dataset == "tvseries":
+            self.loss = LabelSmoothingCrossEntropy(smoothing=0.1)
+            self.hparams.mean_average_precision_skip_classes = [0]
 
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
