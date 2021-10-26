@@ -42,6 +42,7 @@ class X3D(torch.nn.Module):
         x3d_head_batchnorm: bool,
         x3d_fc_std_init: float,
         x3d_final_batchnorm_zero_init: bool,
+        headless=False,
     ):
         torch.nn.Module.__init__(self)
         self.norm_module = torch.nn.BatchNorm3d
@@ -125,17 +126,18 @@ class X3D(torch.nn.Module):
             dim_in = dim_out
             self.add_module(prefix, s)
 
-        spat_sz = int(math.ceil(image_size / 32.0))
-        self.head = X3DHead(
-            dim_in=dim_out,
-            dim_inner=dim_inner,
-            dim_out=x3d_conv5_dim,
-            num_classes=num_classes,
-            pool_size=(frames_per_clip, spat_sz, spat_sz),
-            dropout_rate=x3d_dropout_rate,
-            act_func=x3d_head_activation,
-            bn_lin5_on=bool(x3d_head_batchnorm),
-        )
+        if not headless:
+            spat_sz = int(math.ceil(image_size / 32.0))
+            self.head = X3DHead(
+                dim_in=dim_out,
+                dim_inner=dim_inner,
+                dim_out=x3d_conv5_dim,
+                num_classes=num_classes,
+                pool_size=(frames_per_clip, spat_sz, spat_sz),
+                dropout_rate=x3d_dropout_rate,
+                act_func=x3d_head_activation,
+                bn_lin5_on=bool(x3d_head_batchnorm),
+            )
         init_weights(self, x3d_fc_std_init, bool(x3d_final_batchnorm_zero_init))
 
     def forward(self, x: Tensor):

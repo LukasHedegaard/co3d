@@ -616,6 +616,7 @@ def CoX3D(
     x3d_final_batchnorm_zero_init: bool,
     temporal_fill: PaddingMode = "zeros",
     se_scope="frame",
+    headless=False,
 ) -> co.Sequential:
     """
     Continual X3D model,
@@ -705,20 +706,21 @@ def CoX3D(
         dim_in = dim_out
         modules.append((prefix, s))
 
-    spat_sz = int(math.ceil(image_size / 32.0))
-    head = CoX3DHead(
-        dim_in=dim_out,
-        dim_inner=dim_inner,
-        dim_out=x3d_conv5_dim,
-        num_classes=num_classes,
-        pool_size=(frames_per_clip, spat_sz, spat_sz),
-        dropout_rate=x3d_dropout_rate,
-        act_func=x3d_head_activation,
-        bn_lin5_on=bool(x3d_head_batchnorm),
-        temporal_window_size=frames_per_clip,
-        temporal_fill=temporal_fill,
-    )
-    modules.append(("head", head))
+    if not headless:
+        spat_sz = int(math.ceil(image_size / 32.0))
+        head = CoX3DHead(
+            dim_in=dim_out,
+            dim_inner=dim_inner,
+            dim_out=x3d_conv5_dim,
+            num_classes=num_classes,
+            pool_size=(frames_per_clip, spat_sz, spat_sz),
+            dropout_rate=x3d_dropout_rate,
+            act_func=x3d_head_activation,
+            bn_lin5_on=bool(x3d_head_batchnorm),
+            temporal_window_size=frames_per_clip,
+            temporal_fill=temporal_fill,
+        )
+        modules.append(("head", head))
     seq = co.Sequential(OrderedDict(modules))
     init_weights(seq, x3d_fc_std_init, bool(x3d_final_batchnorm_zero_init))
     return seq
