@@ -262,6 +262,10 @@ def decode_video(
         # Decode video selectively
         timebase = video_fps / target_fps * pts_base
         video_start_pts = int(start_idx * timebase)
+
+        if end_idx == -1:
+            end_idx = int(((video_stream.duration - 1) / timebase) + 1)
+
         video_end_pts = int((end_idx - 1) * timebase) + 1
 
     frames, _ = pyav_decode_stream(
@@ -272,7 +276,7 @@ def decode_video(
         seek_margin=100 * pts_base,
     )
     num_decoded_frames = len(frames)
-    num_wanted_frames = end_idx - start_idx
+    num_wanted_frames = int(end_idx) - start_idx
 
     # Select frame indices
     frame_inds = torch.linspace(
@@ -352,7 +356,8 @@ def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps:
     # Iterate through annotations and update
     class2idx = {c: i for i, c in enumerate(CLASSES)}
 
-    anno_paths = list((Path(annotation_path) / split).glob(f"*_{split}.txt"))
+    # NB: If diving is added after cliff-diving, there will be no labels for the former
+    anno_paths = sorted((Path(annotation_path) / split).glob(f"*_{split}.txt"))[::-1]
     for anno_path in tqdm(anno_paths, desc="Parsing annotations"):
         class_name = anno_path.stem.split("_")[0]
         class_index = class2idx[class_name]
@@ -372,4 +377,4 @@ def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps:
     # Save annotatio-data
     with open(parsed_annotation_path, "wb") as file:
         logger.info(f"Saving parsed annotations to {parsed_annotation_path}")
-        pickle.dump(label_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(label_dict, file)
