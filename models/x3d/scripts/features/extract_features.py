@@ -510,7 +510,7 @@ def main(model, split):
         x3d_head_batchnorm,
         x3d_fc_std_init,
         x3d_final_batchnorm_zero_init,
-        headless=True,
+        headless=False,
     )
 
     # Load weights
@@ -591,12 +591,12 @@ def main(model, split):
                 start = end - frames_per_clip
 
                 f = (
-                    module.forward(video[:, :, start:end].to(device=device))[0]
+                    module.forward(video[:, :, start:end].to(device=device))  # [0]
                     .detach()
                     .to(device=torch.device("cpu"))
                 )
                 if len(feat) == 0:
-                    for t in range(frames_per_clip - 1):
+                    for t in range(f.shape[2] - 1):
                         feat.append(f[:, :, t])
                 feat.append(f[:, :, -1])
 
@@ -604,7 +604,7 @@ def main(model, split):
                 features[p.stem] = torch.stack(feat, dim=2)
 
     # Save features
-    with open(f"x3d_{model}_kin_features_{split}.pickle", "wb") as f:
+    with open(f"x3d_{model}_kin_features_{split}_2.pickle", "wb") as f:
         pickle.dump(features, f)
 
 
