@@ -12,7 +12,7 @@ PRECISION=16
 
 MODEL=s
 FRAMES_PER_CLIP=64
-FORWARD_FRAME_DELAY=96
+FORWARD_FRAME_DELAY=64
 NUM_FORWARD_FRAMES=64
 
 python $PROJECT/main.py \
@@ -39,10 +39,11 @@ python $PROJECT/main.py \
     --optimization_metric mAP \
     --num_sanity_val_steps 0 \
     --from_hparam_space_file models/cox3d/scripts/hparamsearch/s_space.yaml \
-    --unfreeze_epoch_step 3 \
-    --unfreeze_layer_step 5 \
-    --unfreeze_from_epoch 0 \
     --mean_average_precision_skip_classes 0,21 \
     --dataloader_prefetch_factor 4 \
     --log_every_n_steps 1 \
+    --unfreeze_epoch_step 1 \
+    --unfreeze_layer_step 5 \
+    --unfreeze_from_epoch 0 \
+    --unfreeze_layers_initial 5 \
 
