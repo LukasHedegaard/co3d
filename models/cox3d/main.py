@@ -5,7 +5,6 @@ from typing import Sequence
 
 import torch
 from ride import Configs, RideModule
-
 from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
@@ -234,7 +233,6 @@ class CoX3DRide(
 
         x, y = batch[0], batch[1]
         x = x[:, :, : -self.hparams.co3d_forward_prediction_delay or None]
-        y = y[:, self.hparams.co3d_forward_prediction_delay :]
 
         # Ensure that there are enough frames
         num_init_frames = max(
@@ -253,6 +251,7 @@ class CoX3DRide(
             assert x.shape[2] == num_needed_frames
 
         if self.task == "detection":
+            y = y[:, self.hparams.co3d_forward_prediction_delay :]
             if num_missing_frames > 0:
                 append = y[:, -1].repeat((num_missing_frames, 1)).permute(1, 0)
                 y = torch.cat([y, append], dim=1)
