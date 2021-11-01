@@ -1,17 +1,19 @@
 import argparse
-import torch
+import pickle
 from pathlib import Path
-from models.x3d.x3d import X3D
+
+import torch
 from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
     NormalizeVideo,
     ToTensorVideo,
 )
-from datasets.transforms import RandomShortSideScaleJitterVideo
-from datasets.thumos14 import decode_video
 from tqdm import tqdm
-import pickle
+
+from datasets.thumos14 import decode_video
+from datasets.transforms import RandomShortSideScaleJitterVideo
+from models.x3d.x3d import X3D
 
 anno = {
     "train_session_set": [
