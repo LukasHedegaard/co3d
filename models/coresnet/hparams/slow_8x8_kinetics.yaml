@@ -1,5 +1,7 @@
 arch: "slow"
-input_channel_num: 3
+image_size: 224
+frames_per_clip: 8
+temporal_downsampling: 8
 resnet_depth: 50
 resnet_num_groups: 1
 resnet_width_per_group: 64

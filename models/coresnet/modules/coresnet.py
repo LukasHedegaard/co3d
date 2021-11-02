@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 
 import continual as co
 from torch import nn
-from models.common import CoResStage, init_weights
+from models.common.res import CoResStage, init_weights
 
 # Number of blocks for different stages given the model depth.
 _MODEL_STAGE_DEPTH = {50: (3, 4, 6, 3), 101: (3, 4, 23, 3)}
@@ -131,19 +131,10 @@ def CoResNetBasicStem(
     return co.Sequential(
         OrderedDict(
             [
-                (
-                    "pathway0_stem",
-                    co.Sequential(
-                        OrderedDict(
-                            [
-                                ("conv", conv),
-                                ("bn", bn),
-                                ("relu", relu),
-                                ("pool_layer", pool_layer),
-                            ]
-                        )
-                    ),
-                )
+                ("conv", conv),
+                ("norm", bn),
+                ("relu", relu),
+                ("pool_layer", pool_layer),
             ]
         )
     )
@@ -162,9 +153,9 @@ def CoBottleneckTransform(
     bn_mmt=0.1,
     dilation=1,
     norm_module=nn.BatchNorm3d,
-    block_idx=0,
-    emporal_window_size: int = 4,
     temporal_fill: co.PaddingMode = "zeros",
+    *args,
+    **kwargs,
 ):
     """
     Args:
@@ -243,14 +234,14 @@ def CoBottleneckTransform(
     return co.Sequential(
         OrderedDict(
             [
-                ("a", a),
-                ("a_bn", a_bn),
-                ("a_relu", a_relu),
-                ("b", b),
-                ("b_bn", b_bn),
-                ("b_relu", b_relu),
-                ("c", c),
-                ("c_bn", c_bn),
+                ("conv_a", a),
+                ("norm_a", a_bn),
+                ("relu_a", a_relu),
+                ("conv_b", b),
+                ("norm_b", b_bn),
+                ("relu_b", b_relu),
+                ("conv_c", c),
+                ("norm_c", c_bn),
             ]
         )
     )
@@ -301,7 +292,7 @@ def CoResNetBasicHead(
     # Perform FC in a fully convolutional manner. The FC layer will be
     # initialized with a different std comparing to convolutional layers.
     modules.append(
-        ("projection", co.Linear(dim_in, num_classes, bias=True, channel_dim=2))
+        ("projection", co.Linear(dim_in, num_classes, bias=True, channel_dim=-4))
     )
 
     def not_training(module, *args):
@@ -426,7 +417,7 @@ def CoResNet(
         dim_in=resnet_width_per_group,
         dim_out=resnet_width_per_group * 4,
         dim_inner=dim_inner,
-        temp_kernel_sizes=temp_kernel[1],
+        temp_kernel_sizes=temp_kernel[1][0],
         stride=stride2,
         num_blocks=dep2,
         num_groups=resnet_num_groups,
@@ -448,7 +439,7 @@ def CoResNet(
         dim_in=resnet_width_per_group * 4,
         dim_out=resnet_width_per_group * 8,
         dim_inner=dim_inner * 2,
-        temp_kernel_sizes=temp_kernel[2],
+        temp_kernel_sizes=temp_kernel[2][0],
         stride=stride3,
         num_blocks=dep3,
         num_groups=resnet_num_groups,
@@ -464,7 +455,7 @@ def CoResNet(
         dim_in=resnet_width_per_group * 8,
         dim_out=resnet_width_per_group * 16,
         dim_inner=dim_inner * 4,
-        temp_kernel_sizes=temp_kernel[3],
+        temp_kernel_sizes=temp_kernel[3][0],
         stride=stride4,
         num_blocks=dep4,
         num_groups=resnet_num_groups,
@@ -480,7 +471,7 @@ def CoResNet(
         dim_in=resnet_width_per_group * 16,
         dim_out=resnet_width_per_group * 32,
         dim_inner=dim_inner * 8,
-        temp_kernel_sizes=temp_kernel[4],
+        temp_kernel_sizes=temp_kernel[4][0],
         stride=stride5,
         num_blocks=dep5,
         num_groups=resnet_num_groups,
@@ -521,13 +512,13 @@ def CoResNet(
     seq = co.Sequential(
         OrderedDict(
             [
-                ("s1", s1),
-                ("s2", s2),
+                ("0", s1),
+                ("1", s2),
                 ("pathway0_pool", pathway0_pool),  # Not actually utilized
-                ("s3", s3),
-                ("s4", s4),
-                ("s5", s5),
-                ("head", head),
+                ("2", s3),
+                ("3", s4),
+                ("4", s5),
+                ("5", head),
             ]
         )
     )

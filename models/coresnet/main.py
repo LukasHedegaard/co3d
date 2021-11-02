@@ -10,7 +10,7 @@ from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from models.coresnet.coresnet import CoResNet
+from models.coresnet.modules.coresnet import CoResNet
 
 logger = getLogger("CoResNet")
 
@@ -26,7 +26,7 @@ class CoResNetRide(
         c = Configs()
         c.add(
             name="resnet_architecture",
-            type=int,
+            type=str,
             default="slow",
             strategy="constant",
             choices=["slow", "i3d"],
@@ -63,7 +63,7 @@ class CoResNetRide(
             description="Dropout rate before final projection in the backbone.",
         )
         c.add(
-            name="resnet_head_activation",
+            name="resnet_head_act",
             type=str,
             default="softmax",
             choices=["softmax", "sigmoid"],
@@ -166,8 +166,8 @@ class CoResNetRide(
         self.module.call_mode = "forward_steps"
 
         # Ensure that state-dict is flattened
-        self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
-        self.state_dict = partial(self.module.state_dict, flatten=True)
+        # self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
+        # self.state_dict = partial(self.module.state_dict, flatten=True)
 
         num_init_frames = max(
             self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
@@ -188,6 +188,23 @@ class CoResNetRide(
 
         # Assuming Conv3d have stride = 1 and dilation = 1, and that no other modules delay the network.
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
+
+    def map_loaded_weights(self, finetune_from_weights, state_dict):
+        # Map state_dict for "Slow" weights
+        state_dict = {
+            (
+                k.replace("blocks", "module")
+                .replace("res_module.", "pathway0_res")
+                .replace("branch1_conv", "0.0.branch1")
+                .replace("branch1_norm", "0.0.branch1_bn")
+                .replace("branch2", "0.1.branch2")
+                .replace("3.pathway0_res0.0.0.", "3.pathway0_res0.0.0.0.")
+                .replace("4.pathway0_res0.0.0.", "4.pathway0_res0.0.0.0.")
+                .replace("proj", "projection")
+            ): v
+            for k, v in state_dict.items()
+        }
+        return state_dict
 
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
