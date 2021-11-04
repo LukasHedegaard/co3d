@@ -106,6 +106,7 @@ class Kinetics(torch.utils.data.Dataset):
         self.num_spatial_crops = num_spatial_crops
         self.num_retries = num_retries
 
+        logger.info("Loading Kinetics {}".format(self.split))
         (
             self.labels,
             self.file_paths,
