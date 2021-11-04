@@ -16,6 +16,7 @@ from torchvision.transforms._transforms_video import (
     ToTensorVideo,
 )
 
+from datasets.charades import Charades
 from datasets.kinetics import Kinetics
 from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
@@ -48,7 +49,14 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             name="dataset",
             type=str,
             default="kinetics400",
-            choices=["kinetics400", "kinetics600", "kinetics3", "thumos14", "tvseries"],
+            choices=[
+                "kinetics400",
+                "kinetics600",
+                "kinetics3",
+                "thumos14",
+                "tvseries",
+                "charades",
+            ],
             strategy="constant",
             description=f"Dataset name. It is assumed that these datasets are available in the DATASETS_PATH env variable ({str(DATASETS_PATH)})",
         )
@@ -105,13 +113,6 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             default=160,
             strategy="constant",
             description="Target image size.",
-        )
-        c.add(
-            name="num_workers",
-            type=int,
-            default=min(10, NUM_CPU),
-            strategy="constant",
-            description="Number of CPU workers to use for dataloading.",
         )
         c.add(
             name="val_split_pct",
@@ -196,6 +197,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics3": "classification",
             "thumos14": "detection",
             "tvseries": "detection",
+            "charades": "classification",
         }[self.hparams.dataset]
 
         return self.dataloader
@@ -370,6 +372,8 @@ def train_val_test(
         Ds = Thumos14
     elif "tvseries" in data_path.lower():
         Ds = TvSeries
+    elif "charades" in data_path.lower():
+        Ds = Charades
     else:
         raise ValueError(
             "'root_path' must contain either 'kinetics', 'thumos14', or 'tvseries'"
