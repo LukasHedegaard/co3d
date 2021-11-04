@@ -9,5 +9,6 @@ resnet_dropout_rate: 0.5
 resnet_fc_std_init: 0.01
 resnet_final_batchnorm_zero_init: 1
 weight_decay: 1e-4
-learning_rate: 0.1 # for 8 GPUs with batch_size 64
-max_epochs: 196
+learning_rate: 0.25 # for 8 GPUs with batch_size 64
+max_epochs: 60
+loss: binary_cross_entropy_with_logits
