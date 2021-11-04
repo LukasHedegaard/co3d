@@ -1,13 +1,12 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
-from functools import partial
 from typing import Sequence
 
-import torch
 from ride import Configs, RideModule
-from ride.metrics import TopKAccuracyMetric
+from ride.metrics import MeanAveragePrecisionMetric, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
+from ride.utils.utils import name
 
 from datasets import ActionRecognitionDatasets
 from models.coresnet.modules.coresnet import CoResNet
@@ -20,6 +19,7 @@ class CoResNetRide(
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
     TopKAccuracyMetric(1),
+    MeanAveragePrecisionMetric,
 ):
     @staticmethod
     def configs() -> Configs:
@@ -163,20 +163,19 @@ class CoResNetRide(
             align_detection=False,
             temporal_fill=self.hparams.co3d_temporal_fill,
         )
-        self.module.call_mode = "forward_steps"
 
-        # Ensure that state-dict is flattened
-        # self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
-        # self.state_dict = partial(self.module.state_dict, flatten=True)
+        if "frame" in self.hparams.co3d_forward_mode:
+            self.module.call_mode = "forward_steps"
 
-        num_init_frames = max(
-            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
-        )
-        self.hparams.frames_per_clip = (
-            num_init_frames
-            + self.hparams.co3d_num_forward_frames
-            + self.hparams.co3d_forward_prediction_delay
-        )
+            num_init_frames = max(
+                self.module.receptive_field - 1,
+                self.hparams.co3d_forward_frame_delay - 1,
+            )
+            self.hparams.frames_per_clip = (
+                num_init_frames
+                + self.hparams.co3d_num_forward_frames
+                + self.hparams.co3d_forward_prediction_delay
+            )
 
         # From ActionRecognitionDatasets
         frames_per_clip = (
@@ -188,6 +187,7 @@ class CoResNetRide(
 
         # Assuming Conv3d have stride = 1 and dilation = 1, and that no other modules delay the network.
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
+        logger.info(f"Loss: {name(self.loss)}")
 
     def map_loaded_weights(self, finetune_from_weights, state_dict):
         # Map state_dict for "Slow" weights
@@ -206,43 +206,6 @@ class CoResNetRide(
         }
         return state_dict
 
-    def preprocess_batch(self, batch):
-        """Overloads method in ride.Lifecycle"""
-
-        x, y = batch[0], batch[1]
-        x = x[:, :, : -self.hparams.co3d_forward_prediction_delay or None]
-
-        # Ensure that there are enough frames
-        num_init_frames = max(
-            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
-        )
-        num_needed_frames = num_init_frames + self.hparams.co3d_num_forward_frames
-        num_missing_frames = num_needed_frames - x.shape[2]
-        if num_missing_frames > 0:
-            # Repeat the last frame
-            append = (
-                x[:, :, -1]
-                .repeat((num_missing_frames, 1, 1, 1, 1))
-                .permute(1, 2, 0, 3, 4)
-            )
-            x = torch.cat([x, append], dim=2)
-            assert x.shape[2] == num_needed_frames
-
-        if self.task == "detection":
-            y = y[:, self.hparams.co3d_forward_prediction_delay :]
-            if num_missing_frames > 0:
-                append = y[:, -1].repeat((num_missing_frames, 1)).permute(1, 0)
-                y = torch.cat([y, append], dim=1)
-
-            # Remove labels for initialisation frames
-            y = y[:, -self.hparams.co3d_num_forward_frames :]
-
-            # Collapse into batch dimension
-            y = y.reshape(-1)
-
-        batch = [x, y]
-        return batch
-
     def clean_state_on_shape_change(self, shape):
         if getattr(self, "_current_input_shape", None) != shape:
             self.module.clean_state()
@@ -257,11 +220,15 @@ class CoResNetRide(
         if "init" in self.hparams.co3d_forward_mode:
             self.warm_up(tuple(x[:, :, 0].shape))
 
-        num_init_frames = max(
-            self.module.receptive_field - 1, self.hparams.co3d_forward_frame_delay - 1
-        )
-        self.module(x[:, :, :num_init_frames])  # = forward_steps don't save
-        result = self.module(x[:, :, num_init_frames:])  # = forward_steps
+            num_init_frames = max(
+                self.module.receptive_field - 1,
+                self.hparams.co3d_forward_frame_delay - 1,
+            )
+            self.module(x[:, :, :num_init_frames])  # = forward_steps don't save
+
+            result = self.module(x[:, :, num_init_frames:])
+        else:
+            result = self.module(x)
 
         if self.task == "classification":
             result = result.mean(dim=-1)

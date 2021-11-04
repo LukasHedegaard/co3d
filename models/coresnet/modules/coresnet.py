@@ -3,6 +3,7 @@ from typing import Sequence, Tuple
 
 import continual as co
 from torch import nn
+
 from models.common.res import CoResStage, init_weights
 
 # Number of blocks for different stages given the model depth.
