@@ -185,7 +185,11 @@ class Charades(torch.utils.data.Dataset):
 
         # Load labels for selection and aggregate to clip-level labels
         # Use video-level labels for testing
-        label_selection = slice(frame_inds[0], frame_inds[-1]) if self.split == "train" else slice(None)
+        label_selection = (
+            slice(frame_inds[0], frame_inds[-1])
+            if self.split == "train"
+            else slice(None)
+        )
         label_set = set(self.labels[index][label_selection])
         label_inds = torch.tensor(
             [

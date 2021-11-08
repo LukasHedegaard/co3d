@@ -100,8 +100,6 @@ class SpatiallySamplingVideoEnsemble(Dataset):
         return (video, *rest)
 
 
-
-
 class TemporallySamplingVideoEnsemble(Dataset):
     """Wraps a video dataset which uses the torchvision VideoClips object (e.g. Hmdb51 and Ucf101)
     to create an ensemble view, uniformly sampling videos through time.
