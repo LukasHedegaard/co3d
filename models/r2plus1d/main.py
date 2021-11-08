@@ -29,13 +29,19 @@ class R2Plus1D(
             strategy="constant",
             description="Target image size. As found in the R(2+1)D paper: https://arxiv.org/abs/1711.11248",
         )
+        c.add(
+            name="temporal_window_size",
+            type=int,
+            default=8,
+            strategy="choice",
+            description="Temporal window size for global average pool.",
+        )
         return c
 
     def __init__(self, hparams):
         dim_in = 3
-        frames_per_clip = self.hparams.frames_per_clip
-        image_size = self.hparams.image_size
-        self.input_shape = (dim_in, frames_per_clip, image_size, image_size)
+        self.hparams.frames_per_clip = self.hparams.temporal_window_size
+        self.input_shape = (dim_in, self.hparams.temporal_window_size, self.hparams.image_size, self.hparams.image_size)
 
         VideoResNet.__init__(
             self,

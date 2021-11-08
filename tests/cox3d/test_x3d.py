@@ -31,7 +31,7 @@ torch.manual_seed(42)
 
 
 def boring_video(
-    image_size=160, frames_per_clip=4, save_dir=Path(__file__).parent / "downloads"
+    image_size=160, temporal_window_size=4, save_dir=Path(__file__).parent / "downloads"
 ):
     save_dir.mkdir(exist_ok=True)
 
@@ -51,7 +51,7 @@ def boring_video(
     # Preprocess it (as a "boring" video)
     im = np.asarray(Image.open(image_path))
     vid = torch.tensor(
-        np.repeat(im[None, :, :], frames_per_clip, axis=0)
+        np.repeat(im[None, :, :], temporal_window_size, axis=0)
     )  # .transpose(1, 2)
     transforms = Compose(
         [
@@ -569,7 +569,7 @@ def x3d_feature_example(num_modules: int):
     model = X3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=4,
+        temporal_window_size=4,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -595,14 +595,14 @@ def x3d_feature_example(num_modules: int):
 
 def test_CoX3D():
     weights_path = download_weights()  # s
-    frames_per_clip = 13
-    sample = boring_video(image_size=160, frames_per_clip=frames_per_clip)
+    temporal_window_size = 13
+    sample = boring_video(image_size=160, temporal_window_size=temporal_window_size)
 
     # Regular model
     model = X3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=frames_per_clip,
+        temporal_window_size=temporal_window_size,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -623,7 +623,7 @@ def test_CoX3D():
     comodel = CoX3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=frames_per_clip,
+        temporal_window_size=temporal_window_size,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -665,12 +665,12 @@ def test_CoX3D():
     # forward
     comodel.clean_state()
     # init
-    for i in range(frames_per_clip):
+    for i in range(temporal_window_size):
         comodel.forward_step(sample[:, :, i])
 
     # zero-pad end manually
     zeros = torch.zeros_like(sample[:, :, 0])
-    for _ in range(comodel.delay - frames_per_clip):
+    for _ in range(comodel.delay - temporal_window_size):
         comodel.forward_step(zeros)
 
     # final result
@@ -690,14 +690,14 @@ def test_CoX3D():
 
 def test_CoX3D_se_mod():
     weights_path = download_weights()  # s
-    frames_per_clip = 13
-    sample = boring_video(image_size=160, frames_per_clip=frames_per_clip)
+    temporal_window_size = 13
+    sample = boring_video(image_size=160, temporal_window_size=temporal_window_size)
 
     # Regular model
     model = X3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=frames_per_clip,
+        temporal_window_size=temporal_window_size,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -718,7 +718,7 @@ def test_CoX3D_se_mod():
     comodel = CoX3D(
         dim_in=3,
         image_size=160,
-        frames_per_clip=frames_per_clip,
+        temporal_window_size=temporal_window_size,
         num_classes=400,
         x3d_conv1_dim=12,
         x3d_conv5_dim=2048,
@@ -766,12 +766,12 @@ def test_CoX3D_se_mod():
     # forward
     comodel.clean_state()
     # init
-    for i in range(frames_per_clip):
+    for i in range(temporal_window_size):
         comodel.forward_step(sample[:, :, i])
 
     # pad end manually
     pad = sample[:, :, -1]
-    for _ in range(comodel.delay - frames_per_clip):
+    for _ in range(comodel.delay - temporal_window_size):
         comodel.forward_step(pad)
 
     # final result

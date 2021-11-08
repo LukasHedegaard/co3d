@@ -333,7 +333,7 @@ def CoX3DStem(
 def CoX3D(
     dim_in: int,
     image_size: int,
-    frames_per_clip: int,
+    temporal_window_size: int,
     num_classes: int,
     x3d_conv1_dim: int,
     x3d_conv5_dim: int,
@@ -404,7 +404,7 @@ def CoX3D(
         padding=[temp_kernel[0][0] // 2, 1, 1],
         norm_module=norm_module,
         stem_func_name="x3d_stem",
-        temporal_window_size=frames_per_clip,
+        temporal_window_size=temporal_window_size,
         temporal_fill=temporal_fill,
     )
     modules.append(("s1", s1))
@@ -433,7 +433,7 @@ def CoX3D(
             norm_module=norm_module,
             dilation=1,
             drop_connect_rate=0.0,
-            temporal_window_size=frames_per_clip,
+            temporal_window_size=temporal_window_size,
             temporal_fill=temporal_fill,
             se_scope=se_scope,
         )
@@ -447,11 +447,11 @@ def CoX3D(
             dim_inner=dim_inner,
             dim_out=x3d_conv5_dim,
             num_classes=num_classes,
-            pool_size=(frames_per_clip, spat_sz, spat_sz),
+            pool_size=(temporal_window_size, spat_sz, spat_sz),
             dropout_rate=x3d_dropout_rate,
             act_func=x3d_head_activation,
             bn_lin5_on=bool(x3d_head_batchnorm),
-            temporal_window_size=frames_per_clip,
+            temporal_window_size=temporal_window_size,
             temporal_fill=temporal_fill,
         )
         modules.append(("head", head))

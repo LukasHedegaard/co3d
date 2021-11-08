@@ -13,7 +13,7 @@ FRAME_DELAY=56
 
 for FRAMES_PER_CLIP in 96 64 32 16 13
 do
-    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $FRAMES_PER_CLIP - 1))
+    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $TEMPORAL_WINDOW_SIZE - 1))
     FORWARD_FRAME_DELAY=$(($FORWARD_FRAME_DELAY>$MAX_FRAME_DELAY ? $MAX_FRAME_DELAY : $FORWARD_FRAME_DELAY ))
     echo $FORWARD_FRAME_DELAY
 
@@ -34,7 +34,7 @@ do
         --validate \
         --logging_backend wandb \
         --num_workers 5 \
-        --frames_per_clip $FRAMES_PER_CLIP \
+        --temporal_window_size $TEMPORAL_WINDOW_SIZE \
         --precision 16 \
         --frame_rate $FRAME_RATE \
 
@@ -45,7 +45,7 @@ MODEL=m
 
 for FRAMES_PER_CLIP in 96 64 32 16
 do
-    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $FRAMES_PER_CLIP - 1))
+    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $TEMPORAL_WINDOW_SIZE - 1))
     FORWARD_FRAME_DELAY=$(($FORWARD_FRAME_DELAY>$MAX_FRAME_DELAY ? $MAX_FRAME_DELAY : $FORWARD_FRAME_DELAY ))
     echo $FORWARD_FRAME_DELAY
 
@@ -66,7 +66,7 @@ do
         --validate \
         --logging_backend wandb \
         --num_workers 5 \
-        --frames_per_clip $FRAMES_PER_CLIP \
+        --temporal_window_size $TEMPORAL_WINDOW_SIZE \
         --precision 16 \
         --frame_rate $FRAME_RATE \
 
@@ -78,7 +78,7 @@ FRAME_DELAY=114 # From conv layers in large model
 
 for FRAMES_PER_CLIP in 16 #96 64 32
 do
-    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $FRAMES_PER_CLIP - 1))
+    FORWARD_FRAME_DELAY=$(($FRAME_DELAY + $TEMPORAL_WINDOW_SIZE - 1))
     FORWARD_FRAME_DELAY=$(($FORWARD_FRAME_DELAY>$MAX_FRAME_DELAY ? $MAX_FRAME_DELAY : $FORWARD_FRAME_DELAY ))
     echo $FORWARD_FRAME_DELAY
 
@@ -99,7 +99,7 @@ do
         --validate \
         --logging_backend wandb \
         --num_workers 5 \
-        --frames_per_clip $FRAMES_PER_CLIP \
+        --temporal_window_size $TEMPORAL_WINDOW_SIZE \
         --frame_rate $FRAME_RATE \
         # --precision 16 \
 
@@ -130,13 +130,13 @@ do
             --co3d_forward_mode init_frame \
             --co3d_temporal_fill replicate \
             --co3d_num_forward_frames 1 \
-            --co3d_forward_frame_delay $(($FRAME_DELAY + $FRAMES_PER_CLIP - 1))  \
+            --co3d_forward_frame_delay $(($FRAME_DELAY + $TEMPORAL_WINDOW_SIZE - 1))  \
             --benchmark True \
             --validate \
             --distributed_backend horovod \
             --logging_backend wandb \
             --num_workers 6 \
-            --frames_per_clip $FRAMES_PER_CLIP \
+            --temporal_window_size $TEMPORAL_WINDOW_SIZE \
             --precision 16 \
             --temporal_downsampling 2 \
 
@@ -165,7 +165,7 @@ horovodrun -np 4 python $PROJECT/main.py \
             --distributed_backend horovod \
             --logging_backend wandb \
             --num_workers 6 \
-            --frames_per_clip 96 \
+            --temporal_window_size 96 \
             --precision 16 \
             --temporal_downsampling 2 \
 
@@ -185,13 +185,13 @@ do
             --co3d_forward_mode init_frame \
             --co3d_temporal_fill replicate \
             --co3d_num_forward_frames 1 \
-            --co3d_forward_frame_delay $(($FRAME_DELAY + $FRAMES_PER_CLIP - 1))  \
+            --co3d_forward_frame_delay $(($FRAME_DELAY + $TEMPORAL_WINDOW_SIZE - 1))  \
             --benchmark True \
             --validate \
             --distributed_backend horovod \
             --logging_backend wandb \
             --num_workers 6 \
-            --frames_per_clip $FRAMES_PER_CLIP \
+            --temporal_window_size $TEMPORAL_WINDOW_SIZE \
             --precision 16 \
             --temporal_downsampling 2 \
 
@@ -227,7 +227,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -253,7 +253,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -279,7 +279,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 MODEL=m
@@ -304,7 +304,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -331,7 +331,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -358,7 +358,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -385,7 +385,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 4 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 
@@ -411,7 +411,7 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \
 
 MODEL=l
@@ -436,5 +436,5 @@ horovodrun -np 4 python $PROJECT/main.py \
     --distributed_backend horovod \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision 16 \

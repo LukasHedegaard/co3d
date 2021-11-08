@@ -23,7 +23,7 @@ do
         --co3d_forward_mode frame \
         --co3d_temporal_fill zeros \
 
-    echo "========================== $MODEL $FRAMES_PER_CLIP =========================="
+    echo "========================== $MODEL 64 =========================="
 
     CUDA_VISIBLE_DEVICES=0 \
     python $PROJECT/main.py \
@@ -38,7 +38,7 @@ do
         --log_level INFO \
         --logging_backend tensorboard \
         --co3d_forward_mode frame \
-        --frames_per_clip 32 \
+        --temporal_window_size 64 \
         --co3d_temporal_fill zeros \
 
 done

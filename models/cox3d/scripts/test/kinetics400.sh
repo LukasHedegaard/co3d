@@ -15,7 +15,7 @@ PRECISION=32
 
 
 MODEL=l
-FRAMES_PER_CLIP=64
+TEMPORAL_WINDOW_SIZE=64
 FORWARD_FRAME_DELAY=124 # (114 + 64) * 0.7
 
 python $PROJECT/main.py \
@@ -34,13 +34,13 @@ python $PROJECT/main.py \
     --test \
     --logging_backend wandb \
     --num_workers 4 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision $PRECISION \
     --distributed_backend $DISTRIBUTED_BACKEND \
 
 
 MODEL=m
-FRAMES_PER_CLIP=64
+TEMPORAL_WINDOW_SIZE=64
 FORWARD_FRAME_DELAY=84 # (56 + 64) * 0.7
 
 python $PROJECT/main.py \
@@ -59,14 +59,14 @@ python $PROJECT/main.py \
     --test \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --limit_test_batches 30 \
     --precision $PRECISION \
     --distributed_backend $DISTRIBUTED_BACKEND \
 
 
 MODEL=s
-FRAMES_PER_CLIP=64
+TEMPORAL_WINDOW_SIZE=64
 FORWARD_FRAME_DELAY=84 # (56 + 64) * 0.7
 
 python $PROJECT/main.py \
@@ -81,7 +81,7 @@ python $PROJECT/main.py \
     --test \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --co3d_num_forward_frames 1 \
     --co3d_forward_mode init_frame \
     --co3d_forward_frame_delay $FORWARD_FRAME_DELAY  \

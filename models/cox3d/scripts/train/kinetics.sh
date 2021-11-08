@@ -30,7 +30,7 @@ python $PROJECT/main.py \
     --test \
     --logging_backend wandb \
     --num_workers 5 \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --co3d_num_forward_frames 8 \
     --co3d_forward_mode init_frame \
     --co3d_forward_frame_delay $FORWARD_FRAME_DELAY  \

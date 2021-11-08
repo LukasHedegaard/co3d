@@ -13,7 +13,7 @@ DATASET=kinetics400
 #     --profile_model \
 #     --log_level DEBUG \
 #     --gpus 0 \
-#     --frames_per_clip 64 \
+#     --temporal_window_size 64 \
 
 
 # GPU
@@ -27,7 +27,7 @@ DATASET=kinetics400
 #     --profile_model \
 #     --log_level INFO \
 #     --gpus 1 \
-#     --frames_per_clip 8 \
+#     --temporal_window_size 8 \
 
 # XAVIER
 python $PROJECT/main.py \

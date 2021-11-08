@@ -456,7 +456,7 @@ def main(model, split):
         x3d_head_batchnorm = 0
         x3d_fc_std_init = 0.01
         x3d_final_batchnorm_zero_init = 1
-        frames_per_clip = 13
+        temporal_window_size = 13
         target_fps = 5.0
     elif model == "m":
         image_size = 224
@@ -473,7 +473,7 @@ def main(model, split):
         x3d_head_batchnorm = 0
         x3d_fc_std_init = 0.01
         x3d_final_batchnorm_zero_init = 1
-        frames_per_clip = 16
+        temporal_window_size = 16
         target_fps = 6.0
     elif model == "l":
         image_size = 312
@@ -490,14 +490,14 @@ def main(model, split):
         x3d_head_batchnorm = 0
         x3d_fc_std_init = 0.01
         x3d_final_batchnorm_zero_init = 1
-        frames_per_clip = 16
+        temporal_window_size = 16
         target_fps = 6.0
 
     # Define model
     module = X3D(
         dim_in,
         image_size,
-        frames_per_clip,
+        temporal_window_size,
         num_classes,
         x3d_conv1_dim,
         x3d_conv5_dim,
@@ -589,8 +589,8 @@ def main(model, split):
 
             # Save in blocks
             feat = []
-            for end in range(frames_per_clip, T + 1):
-                start = end - frames_per_clip
+            for end in range(temporal_window_size, T + 1):
+                start = end - temporal_window_size
 
                 f = (
                     module.forward(video[:, :, start:end].to(device=device))  # [0]

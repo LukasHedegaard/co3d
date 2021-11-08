@@ -15,5 +15,5 @@ python $PROJECT/main.py \
         --log_level DEBUG \
         --test \
         --normalisation_style imagenet \
-        --frames_per_clip 64 \
+        --temporal_window_size 64 \
         --temporal_downsampling 1 \

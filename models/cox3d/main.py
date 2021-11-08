@@ -159,19 +159,26 @@ class CoX3DRide(
             strategy="choice",
             description="Number of steps to delay the prediction relative to the frames",
         )
+        c.add(
+            name="temporal_window_size",
+            type=int,
+            default=64,
+            strategy="choice",
+            description="Temporal window size for global average pool.",
+        )
 
         return c
 
     def __init__(self, hparams):
         # Inflate frames_per_clip of dataset, to have some frames for initialization
-        self.temporal_window_size = self.hparams.frames_per_clip
         image_size = self.hparams.image_size
         dim_in = 3
+        self.hparams.frames_per_clip = self.hparams.temporal_window_size
 
         self.module = CoX3D(
             dim_in,
             image_size,
-            self.temporal_window_size,
+            self.hparams.temporal_window_size,
             self.dataloader.num_classes,  # from ActionRecognitionDatasets
             self.hparams.x3d_conv1_dim,
             self.hparams.x3d_conv5_dim,
@@ -189,7 +196,8 @@ class CoX3DRide(
             self.hparams.co3d_temporal_fill,
             se_scope="frame",
         )
-        self.module.call_mode = "forward_steps"
+        if "frame" in self.hparams.co3d_forward_mode:
+            self.module.call_mode = "forward_steps"
 
         # Ensure that state-dict is flattened
         self.load_state_dict = partial(self.module.load_state_dict, flatten=True)

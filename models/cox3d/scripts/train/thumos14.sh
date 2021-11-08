@@ -34,7 +34,7 @@ python $PROJECT/main.py \
     --co3d_forward_frame_delay $FORWARD_FRAME_DELAY  \
     --co3d_num_forward_frames $NUM_FORWARD_FRAMES \
     --step_between_clips $NUM_FORWARD_FRAMES \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision $PRECISION \
     --optimization_metric mAP \
     --learning_rate $LR \
@@ -73,7 +73,7 @@ python $PROJECT/main.py \
 #     --co3d_forward_frame_delay $FORWARD_FRAME_DELAY  \
 #     --co3d_num_forward_frames $NUM_FORWARD_FRAMES \
 #     --step_between_clips $NUM_FORWARD_FRAMES \
-#     --frames_per_clip $FRAMES_PER_CLIP \
+#     --temporal_window_size $TEMPORAL_WINDOW_SIZE \
 #     --precision $PRECISION \
 #     --optimization_metric mAP \
 #     --learning_rate $LR \

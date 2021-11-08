@@ -12,13 +12,13 @@ PRECISION=32
 ## Run train sequence
 
 MODEL=s
-FRAMES_PER_CLIP=5
+TEMPORAL_WINDOW_SIZE=5
 FORWARD_FRAME_DELAY=64
 NUM_FORWARD_FRAMES=264
 LR=0.6 # $BATCH_SIZE * $GPUS * $NUM_FORWARD_FRAMES * OLD_LR / OLD_BS == 21
 
 python $PROJECT/main.py \
-    --id "CoX3D_${MODEL}_${DATASET}_${FRAMES_PER_CLIP}_frames_extract_features" \
+    --id "CoX3D_${MODEL}_${DATASET}_${TEMPORAL_WINDOW_SIZE}_frames_extract_features" \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
@@ -30,7 +30,7 @@ python $PROJECT/main.py \
     --co3d_forward_frame_delay $FORWARD_FRAME_DELAY  \
     --co3d_num_forward_frames $NUM_FORWARD_FRAMES \
     --step_between_clips $NUM_FORWARD_FRAMES \
-    --frames_per_clip $FRAMES_PER_CLIP \
+    --temporal_window_size $TEMPORAL_WINDOW_SIZE \
     --precision $PRECISION \
     --optimization_metric mAP \
     --mean_average_precision_skip_classes 0,21 \

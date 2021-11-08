@@ -27,7 +27,7 @@ class X3D(torch.nn.Module):
         self,
         dim_in: int,
         image_size: int,
-        frames_per_clip: int,
+        temporal_window_size: int,
         num_classes: int,
         x3d_conv1_dim: int,
         x3d_conv5_dim: int,
@@ -133,7 +133,7 @@ class X3D(torch.nn.Module):
                 dim_inner=dim_inner,
                 dim_out=x3d_conv5_dim,
                 num_classes=num_classes,
-                pool_size=(frames_per_clip, spat_sz, spat_sz),
+                pool_size=(temporal_window_size, spat_sz, spat_sz),
                 dropout_rate=x3d_dropout_rate,
                 act_func=x3d_head_activation,
                 bn_lin5_on=bool(x3d_head_batchnorm),
@@ -261,23 +261,29 @@ class X3DRide(
             strategy="choice",
             description="Number of frames to skip before feeding clip to network.",
         )
+        c.add(
+            name="temporal_window_size",
+            type=int,
+            default=8,
+            strategy="choice",
+            description="Temporal window size for global average pool.",
+        )
         return c
 
     def __init__(self, hparams):
         # Ask for more frames in ActionRecognitionDatasets
-        frames_per_clip = self.hparams.frames_per_clip
         assert self.hparams.forward_frame_delay >= 0
-        self.hparams.frames_per_clip += self.hparams.forward_frame_delay
+        self.hparams.frames_per_clip = self.hparams.temporal_window_size + self.hparams.forward_frame_delay
 
         image_size = self.hparams.image_size
         dim_in = 3
-        self.input_shape = (dim_in, frames_per_clip, image_size, image_size)
+        self.input_shape = (dim_in, self.hparams.temporal_window_size, image_size, image_size)
 
         X3D.__init__(
             self,
             dim_in,
             image_size,
-            frames_per_clip,
+            self.hparams.temporal_window_size,
             self.dataloader.num_classes,  # from ActionRecognitionDatasets
             hparams.x3d_conv1_dim,
             hparams.x3d_conv5_dim,
