@@ -94,7 +94,12 @@ class SlowFastRide(
     def __init__(self, hparams):
         dim_in = 3
         self.hparams.frames_per_clip = self.hparams.temporal_window_size
-        self.input_shape = (dim_in, self.hparams.temporal_window_size, self.hparams.image_size, self.hparams.image_size)
+        self.input_shape = (
+            dim_in,
+            self.hparams.temporal_window_size,
+            self.hparams.image_size,
+            self.hparams.image_size,
+        )
 
         SlowFast.__init__(
             self,

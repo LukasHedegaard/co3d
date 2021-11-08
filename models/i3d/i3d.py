@@ -61,7 +61,12 @@ class I3D(
         dim_in = 3
         self.hparams.frames_per_clip = self.hparams.temporal_window_size
         image_size = self.hparams.image_size
-        self.input_shape = (dim_in, self.hparams.temporal_window_size, image_size, image_size)
+        self.input_shape = (
+            dim_in,
+            self.hparams.temporal_window_size,
+            image_size,
+            image_size,
+        )
 
         num_block_temp_kernel = {
             50: [[3], [4], [6], [3]],

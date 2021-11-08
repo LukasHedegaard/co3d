@@ -273,11 +273,18 @@ class X3DRide(
     def __init__(self, hparams):
         # Ask for more frames in ActionRecognitionDatasets
         assert self.hparams.forward_frame_delay >= 0
-        self.hparams.frames_per_clip = self.hparams.temporal_window_size + self.hparams.forward_frame_delay
+        self.hparams.frames_per_clip = (
+            self.hparams.temporal_window_size + self.hparams.forward_frame_delay
+        )
 
         image_size = self.hparams.image_size
         dim_in = 3
-        self.input_shape = (dim_in, self.hparams.temporal_window_size, image_size, image_size)
+        self.input_shape = (
+            dim_in,
+            self.hparams.temporal_window_size,
+            image_size,
+            image_size,
+        )
 
         X3D.__init__(
             self,
