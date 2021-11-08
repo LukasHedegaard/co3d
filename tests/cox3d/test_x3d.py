@@ -14,14 +14,8 @@ from torchvision.transforms._transforms_video import (
 )
 
 from datasets.transforms import RandomShortSideScaleJitterVideo
-from models.cox3d.modules.x3d import (
-    CoResBlock,
-    CoResStage,
-    CoVideoModelStem,
-    CoX3D,
-    CoX3DHead,
-    CoX3DTransform,
-)
+from models.common.res import CoResBlock, CoResStage
+from models.cox3d.modules.x3d import CoX3D, CoX3DHead, CoX3DStem, CoX3DTransform
 from models.x3d.head_helper import X3DHead
 from models.x3d.resnet_helper import ResBlock, ResStage, X3DTransform
 from models.x3d.stem_helper import VideoModelStem
@@ -90,7 +84,7 @@ def test_VideoModelStem():
         stem_func_name="x3d_stem",
     )
 
-    cotrans = CoVideoModelStem(
+    cotrans = CoX3DStem(
         dim_in=2,
         dim_out=2,
         kernel=[5, 3, 3],
@@ -114,11 +108,11 @@ def test_VideoModelStem():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps
     output = cotrans.forward_steps(sample, pad_end=True)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps - broken up
     cotrans.clean_state()
@@ -183,11 +177,11 @@ def test_CoX3DTransform():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps
     output = cotrans.forward_steps(sample, pad_end=True)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps - broken up
     cotrans.clean_state()
@@ -195,7 +189,7 @@ def test_CoX3DTransform():
     assert isinstance(nothing, TensorPlaceholder)
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
-    assert torch.allclose(lasts, target)
+    assert torch.allclose(lasts.squeeze(), target.squeeze())
 
     # forward_step
     cotrans.clean_state()
@@ -268,7 +262,7 @@ def test_CoX3DTransform_boring_input():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps
     output = cotrans.forward_steps(sample, pad_end=True)
@@ -340,7 +334,7 @@ def test_ResBlock():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # Broken up
     cotrans.clean_state()
@@ -348,7 +342,7 @@ def test_ResBlock():
     assert isinstance(nothing, TensorPlaceholder)
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
-    assert torch.allclose(lasts, target)
+    assert torch.allclose(lasts.squeeze(), target.squeeze())
 
 
 def test_ResStage_single():
@@ -383,7 +377,7 @@ def test_ResStage_single():
         num_blocks=1,  # <-
         num_groups=5,
         num_block_temp_kernel=1,  # <-
-        trans_func_name="x3d_transform",
+        trans_func=CoX3DTransform,
         stride_1x1=False,
         norm_module=torch.nn.BatchNorm3d,
         dilation=1,
@@ -405,7 +399,7 @@ def test_ResStage_single():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # Broken up
     cotrans.clean_state()
@@ -413,7 +407,7 @@ def test_ResStage_single():
     assert isinstance(nothing, TensorPlaceholder)
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
-    assert torch.allclose(lasts, target)
+    assert torch.allclose(lasts.squeeze(), target.squeeze())
 
 
 def test_ResStage_multi():
@@ -448,7 +442,7 @@ def test_ResStage_multi():
         num_blocks=3,  # <-
         num_groups=5,
         num_block_temp_kernel=3,  # <-
-        trans_func_name="x3d_transform",
+        trans_func=CoX3DTransform,
         stride_1x1=False,
         norm_module=torch.nn.BatchNorm3d,
         dilation=1,
@@ -470,7 +464,7 @@ def test_ResStage_multi():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # Broken up
     cotrans.clean_state()
@@ -478,7 +472,7 @@ def test_ResStage_multi():
     assert isinstance(nothing, TensorPlaceholder)
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
-    assert torch.allclose(lasts, target)
+    assert torch.allclose(lasts.squeeze(), target.squeeze())
 
 
 def test_CoX3DHead():
@@ -518,7 +512,7 @@ def test_CoX3DHead():
 
     # forward
     output = cotrans.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # Broken up
     cotrans.clean_state()
@@ -526,7 +520,7 @@ def test_CoX3DHead():
     assert isinstance(nothing, TensorPlaceholder)
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
-    assert torch.allclose(lasts, target)
+    assert torch.allclose(lasts.squeeze(), target.squeeze())
 
 
 example_clip = torch.normal(mean=torch.zeros(2 * 4 * 4 * 4)).reshape((1, 2, 4, 4, 4))
@@ -656,11 +650,11 @@ def test_CoX3D():
 
     # forward
     output = comodel.forward(sample)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward_steps
     output = comodel.forward_steps(sample, pad_end=True)
-    assert torch.allclose(target, output)
+    assert torch.allclose(target.squeeze(), output.squeeze())
 
     # forward
     comodel.clean_state()
@@ -752,10 +746,10 @@ def test_CoX3D_se_mod():
 
     # forward
     output = comodel.forward(sample)
-    assert torch.allclose(target, output)  # still identical
+    assert torch.allclose(target.squeeze(), output.squeeze())  # still identical
 
     # forward_steps - not exact any more
-    output = comodel.forward_steps(sample, pad_end=True)
+    output = comodel.forward_steps(sample, pad_end=True).squeeze(-1)
     output_top10 = torch.topk(output, k=10)[1][0].tolist()
 
     assert torch.allclose(target, output, atol=0.2)  # inexact
@@ -775,7 +769,7 @@ def test_CoX3D_se_mod():
         comodel.forward_step(pad)
 
     # final result
-    output = comodel.forward_step(pad)
+    output = comodel.forward_step(pad).squeeze(-1)
     output_top10 = torch.topk(output, k=10)[1][0].tolist()
 
     # assert torch.allclose(target, output, atol=0.8)  # inexact
@@ -784,7 +778,7 @@ def test_CoX3D_se_mod():
     assert len(set(target_top10) - set(output_top10)) <= 4
 
     # Another step - now out of comparable operation
-    output = comodel.forward_step(pad)
+    output = comodel.forward_step(pad).squeeze(-1)
     output_top10 = torch.topk(output, k=10)[1][0].tolist()
 
     # Less exact
