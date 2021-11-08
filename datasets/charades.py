@@ -181,16 +181,19 @@ class Charades(torch.utils.data.Dataset):
                 for frame_ind in frame_inds
             ]
         )
-        video = video.permute(0, 3, 2, 1)  # (T, C, W, H) -> (T, H, W, C)
+        video = video.permute(0, 2, 3, 1)  # (T, C, H, W) -> (T, H, W, C)
 
         # Load labels for selection and aggregate to clip-level labels
-        label_set = set(self.labels[index][frame_inds[0] : frame_inds[-1]])
+        # Use video-level labels for testing
+        label_selection = slice(frame_inds[0], frame_inds[-1]) if self.split == "train" else slice(None)
+        label_set = set(self.labels[index][label_selection])
         label_inds = torch.tensor(
             [
                 int(lbl)
                 for lbl in set(
                     chain.from_iterable([str(lbls).split(",") for lbls in label_set])
                 )
+                if lbl != "nan"
             ],
             dtype=torch.long,
         )
@@ -233,7 +236,7 @@ def load_annotations(
     Construct the video loader.
     """
     with open(str(Path(annotation_path) / "classes.txt"), encoding="utf-8") as f:
-        classes = [c[4:].strip() for c in f.readlines()]
+        classes = [c.strip() for c in f.readlines()]
 
     annotation_path = Path(annotation_path) / f"{split}.csv"
 
@@ -252,16 +255,6 @@ def load_annotations(
     # Aggregate paths and labels per video
     vid2paths = df_groups["path"].apply(list)
     vid2labels = df_groups["labels"].apply(list)
-
-    # TODO: consider adding back in
-    # if split != "train":
-    #     # Form video-level labels from frame level annotations.
-    #     vid2labels.apply()
-    #     _labels = utils.convert_to_video_level_labels(_labels)
-
-    # df["labels"] = df["labels"].apply(
-    #     lambda lbls: [lbl for lbl in str(lbls).split(",")]
-    # )
 
     path_to_videos = list(chain.from_iterable([[x] * num_crops for x in vid2paths]))
     labels = list(chain.from_iterable([[x] * num_crops for x in vid2labels]))
