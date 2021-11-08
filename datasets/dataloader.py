@@ -127,7 +127,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
         c.add(
             name="test_ensemble",
             type=int,
-            default=1,
+            default=0,
             strategy="constant",
             description="Flag indicating whether the test dataset should yield a clip ensemble.",
         )
@@ -492,10 +492,11 @@ def train_val_test(
                 ),
                 global_transform=discard_audio,
             )
-            test = TemporallySamplingVideoEnsemble(
-                dataset=test,
-                num_temporal_clips=test_ensemble_temporal_clips,
-            )
+            # if test_ensemble_temporal_clips > 1:
+            #     test = TemporallySamplingVideoEnsemble(
+            #         dataset=test,
+            #         num_temporal_clips=test_ensemble_temporal_clips,
+            #     )
 
         test = SpatiallySamplingVideoEnsemble(
             dataset=test,

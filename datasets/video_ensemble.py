@@ -65,6 +65,8 @@ class SpatiallySamplingVideoEnsemble(Dataset):
         """
         super(SpatiallySamplingVideoEnsemble, self).__init__()
         self.dataset = dataset
+        if hasattr(self.dataset, "classes"):
+            self.classes = self.dataset.classes
 
         crop_size = (crop_size, crop_size) if isinstance(crop_size, int) else crop_size
 
@@ -96,6 +98,8 @@ class SpatiallySamplingVideoEnsemble(Dataset):
         if self.video_transform:
             video = self.video_transform(video)
         return (video, *rest)
+
+
 
 
 class TemporallySamplingVideoEnsemble(Dataset):
