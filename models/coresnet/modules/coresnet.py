@@ -372,7 +372,7 @@ def CoResNet(
     arch: str,
     dim_in: int,
     image_size: int,
-    frames_per_clip: int,
+    temporal_window_size: int,
     num_classes: int,
     resnet_depth: int,
     resnet_num_groups: int,
@@ -488,7 +488,7 @@ def CoResNet(
         head = CoResNetRoIHead(
             dim_in=resnet_width_per_group * 32,
             num_classes=num_classes,
-            pool_size=(frames_per_clip // pool_size[0], 1, 1),
+            pool_size=(temporal_window_size // pool_size[0], 1, 1),
             resolution=[7] * 2,
             scale_factor=16,
             dropout_rate=resnet_dropout_rate,
@@ -500,13 +500,13 @@ def CoResNet(
             dim_in=resnet_width_per_group * 32,
             num_classes=num_classes,
             pool_size=(
-                frames_per_clip // pool_size[0],
+                temporal_window_size // pool_size[0],
                 image_size // 32 // pool_size[1],
                 image_size // 32 // pool_size[2],
             ),
             dropout_rate=resnet_dropout_rate,
             act_func=resnet_head_act,
-            temporal_window_size=frames_per_clip,
+            temporal_window_size=temporal_window_size,
             temporal_fill=temporal_fill,
         )
 

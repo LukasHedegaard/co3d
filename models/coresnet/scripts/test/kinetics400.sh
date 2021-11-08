@@ -60,6 +60,6 @@ python $PROJECT/main.py \
     --num_workers 4 \
     --precision $PRECISION \
     --distributed_backend $DISTRIBUTED_BACKEND \
-    --frames_per_clip 64 \
+    --temporal_window_size 64 \
     --co3d_forward_mode init_frame \
 

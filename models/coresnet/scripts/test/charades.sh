@@ -58,7 +58,7 @@ python $PROJECT/main.py \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
-    --frames_per_clip 64 \
+    --temporal_window_size 64 \
     --co3d_forward_mode frame \
     --distributed_backend $DISTRIBUTED_BACKEND \
     --test \

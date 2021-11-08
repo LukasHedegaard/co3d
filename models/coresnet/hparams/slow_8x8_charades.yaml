@@ -1,6 +1,6 @@
 arch: slow
 image_size: 256
-frames_per_clip: 8
+temporal_window_size: 8
 temporal_downsampling: 8
 resnet_depth: 50
 resnet_num_groups: 1
