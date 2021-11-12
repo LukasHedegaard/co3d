@@ -16,6 +16,7 @@ from torchvision.transforms._transforms_video import (
     ToTensorVideo,
 )
 
+from datasets.ava import Ava
 from datasets.charades import Charades
 from datasets.kinetics import Kinetics
 from datasets.thumos14 import Thumos14
@@ -53,6 +54,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
                 "thumos14",
                 "tvseries",
                 "charades",
+                "ava",
             ],
             strategy="constant",
             description=f"Dataset name. It is assumed that these datasets are available in the DATASETS_PATH env variable ({str(DATASETS_PATH)})",
@@ -192,9 +194,10 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics400": "classification",
             "kinetics600": "classification",
             "kinetics3": "classification",
+            "charades": "classification",
+            "ava": "classification",
             "thumos14": "detection",
             "tvseries": "detection",
-            "charades": "classification",
         }[self.hparams.dataset]
 
         return self.dataloader
@@ -276,7 +279,7 @@ class ActionRecognitionDatasetLoader:
             train_ds,
             batch_size=batch_size,
             num_workers=num_workers,
-            shuffle=True,
+            shuffle=dataset != "ava",
             pin_memory=num_workers > 1,
             drop_last=True,
             prefetch_factor=dataloader_prefetch_factor,
@@ -371,6 +374,8 @@ def train_val_test(
         Ds = TvSeries
     elif "charades" in data_path.lower():
         Ds = Charades
+    elif "ava" in data_path.lower():
+        Ds = Ava
     else:
         raise ValueError(
             "'root_path' must contain either 'kinetics', 'thumos14', or 'tvseries'"
