@@ -68,7 +68,9 @@ class Co3dBase(RideMixin):
 
     def __init__(self, hparams: AttributeDict, *args, **kwargs):
         self.dim_in = 3
+        self.hparams.frames_per_clip = self.hparams.temporal_window_size
 
+    def on_init_end(self, hparams: AttributeDict, *args, **kwargs):
         # Determine the frames_per_clip to ask from dataloader
         self.hparams.frames_per_clip = self.hparams.temporal_window_size
 
@@ -94,7 +96,6 @@ class Co3dBase(RideMixin):
             self.hparams.image_size,
         )
 
-    def on_init_end(self, hparams: AttributeDict, *args, **kwargs):
         # Decide inference mode
         if "frame" in self.hparams.co3d_forward_mode:
             self.module.call_mode = "forward_steps"  # default = "forward"
@@ -104,7 +105,7 @@ class Co3dBase(RideMixin):
 
         # If conducting profiling, ensure that the model has been warmed up
         # so that it doesn't output placeholder values
-        if "profile_model" in self.hparams:
+        if self.hparams.profile_model:
             logger.info("Warming model up")
             self.module(
                 torch.randn(
