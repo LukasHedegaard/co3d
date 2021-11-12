@@ -2,11 +2,12 @@
 from ride import Main  # isort:skip
 
 from ride import Configs, RideModule
-from ride.metrics import MeanAveragePrecisionMetric, TopKAccuracyMetric
+from ride.metrics import MeanAveragePrecisionMetric, MetricSelector, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
+from datasets.ava import AvaMetric, ava_loss
 from models.common import Co3dBase
 from models.coresnet.modules.coresnet import CoResNet
 
@@ -18,8 +19,12 @@ class CoResNetRide(
     Co3dBase,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
-    TopKAccuracyMetric(1),
-    MeanAveragePrecisionMetric,
+    MetricSelector(
+        kinetics400=TopKAccuracyMetric(1),
+        charades=MeanAveragePrecisionMetric,
+        ava=AvaMetric,
+        default_config="ava",
+    ),
 ):
     @staticmethod
     def configs() -> Configs:
@@ -104,6 +109,10 @@ class CoResNetRide(
         return c
 
     def __init__(self, hparams):
+        if "ava" == self.hparams.dataset:
+            self.loss = ava_loss(self.loss)
+            self.hparams.enable_detection = True
+
         self.module = CoResNet(
             arch=self.hparams.resnet_architecture,
             dim_in=self.dim_in,
@@ -117,22 +126,31 @@ class CoResNetRide(
             resnet_fc_std_init=self.hparams.resnet_fc_std_init,
             resnet_final_batchnorm_zero_init=self.hparams.resnet_final_batchnorm_zero_init,
             resnet_head_act=self.hparams.resnet_head_act,
-            enable_detection=False,
-            align_detection=False,
+            enable_detection=self.hparams.enable_detection,
+            align_detection=self.hparams.align_detection,
             temporal_fill=self.hparams.co3d_temporal_fill,
         )
+
+    def forward(self, x):
+        if self.hparams.enable_detection:
+            # Pass in bounding boxes to RoIHead.
+            self.module[-1].set_boxes(x["boxes"])
+            x = x["images"]
+        return Co3dBase.forward(self, x)
 
     def map_loaded_weights(self, finetune_from_weights, state_dict):
         # Map state_dict for "Slow" weights
         state_dict = {
             (
-                k.replace("blocks", "module")
+                k.replace("model.", "")
+                .replace("blocks", "module")
                 .replace("res_module.", "pathway0_res")
                 .replace("branch1_conv", "0.0.branch1")
                 .replace("branch1_norm", "0.0.branch1_bn")
                 .replace("branch2", "0.1.branch2")
                 .replace("3.pathway0_res0.0.0.", "3.pathway0_res0.0.0.0.")
                 .replace("4.pathway0_res0.0.0.", "4.pathway0_res0.0.0.0.")
+                .replace("detection_head", "module.5")
                 .replace("proj", "projection")
             ): v
             for k, v in state_dict.items()
