@@ -1,8 +1,12 @@
 from collections import OrderedDict
+from functools import partial
 from typing import Sequence, Tuple
 
 import continual as co
+import torch
 from torch import nn
+from torch.functional import Tensor
+from torchvision.ops import RoIAlign, roi_align
 
 from models.common.res import CoResStage, init_weights
 
@@ -365,7 +369,77 @@ def CoResNetRoIHead(
         correct neighbors; It makes negligible differences to the model's
         performance if ROIAlign is used together with conv layers.
     """
-    ...  # TODO: impl
+    modules = []
+
+    modules.append(("s0_tpool", co.AvgPool3d((pool_size[0], 1, 1), stride=1)))
+
+    s0_roi = RoIAlign(
+        resolution,
+        spatial_scale=1.0 / scale_factor,
+        sampling_ratio=0,
+        aligned=aligned,
+    )
+
+    # Patch ROI head impl
+    def roi_align_forward(slf, input: Tensor):
+        assert len(input.shape) == 5
+        if input.is_quantized:
+            input = input.dequantize()
+
+        output = torch.stack(
+            [
+                roi_align(
+                    input[:, :, i],
+                    slf.boxes,
+                    slf.output_size,
+                    slf.spatial_scale,
+                    slf.sampling_ratio,
+                    slf.aligned,
+                )
+                for i in range(input.shape[2])
+            ],
+            dim=2,
+        )
+
+        return output
+
+    def set_boxes(slf, boxes):
+        slf.boxes = [bxs[bxs[:, 0] != -1].float() for bxs in list(boxes)]
+
+    s0_roi.forward = partial(roi_align_forward, s0_roi)
+    s0_roi.set_boxes = partial(set_boxes, s0_roi)
+
+    modules.append(("s0_roi", co.forward_stepping(s0_roi)))
+
+    modules.append(("s0_spool", co.MaxPool3d((1, *resolution), stride=1)))
+
+    if dropout_rate > 0.0:
+        modules.append(("dropout", nn.Dropout(dropout_rate)))
+
+    modules.append(
+        ("projection", co.Linear(dim_in, num_classes, bias=True, channel_dim=-4))
+    )
+
+    def not_training(module, *args):
+        return not module.training
+
+    modules.append(
+        (
+            "act",
+            co.Conditional(
+                not_training,
+                {
+                    "softmax": nn.Softmax(dim=1),
+                    "sigmoid": nn.Sigmoid(),
+                }[act_func],
+            ),
+        )
+    )
+
+    seq = co.Sequential(OrderedDict(modules))
+    seq.set_boxes = seq.s0_roi.set_boxes
+
+    return seq
 
 
 def CoResNet(
@@ -489,7 +563,10 @@ def CoResNet(
             dim_in=resnet_width_per_group * 32,
             num_classes=num_classes,
             pool_size=(temporal_window_size // pool_size[0], 1, 1),
-            resolution=[7] * 2,
+            resolution=(  # [7] * 2
+                image_size // 32 // pool_size[1],
+                image_size // 32 // pool_size[2],
+            ),
             scale_factor=16,
             dropout_rate=resnet_dropout_rate,
             act_func=resnet_head_act,
