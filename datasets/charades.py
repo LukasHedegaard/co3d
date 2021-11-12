@@ -41,7 +41,6 @@ class Charades(torch.utils.data.Dataset):
         audio_transform=None,
         label_transform=None,
         global_transform=None,
-        num_retries=10,  # unused
         num_ensemble_views=1,
         num_spatial_crops=1,
         *args,
@@ -95,15 +94,14 @@ class Charades(torch.utils.data.Dataset):
         self.frames_per_clip = frames_per_clip
         self.step_between_clips = step_between_clips
         self.temporal_downsampling = temporal_downsampling
-        # self.target_fps = 30
         self.video_transform = video_transform
         self.audio_transform = audio_transform
         self.label_transform = label_transform
         self.global_transform = global_transform
-        self.num_retries = num_retries
         self.num_ensemble_views = num_ensemble_views
         assert num_spatial_crops in {1, 2, 3}
         self.num_spatial_crops = num_spatial_crops
+        # self.target_fps = 30
         # self.num_retries = num_retries
 
         logger.info("Loading Charades {}".format(self.split))
