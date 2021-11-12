@@ -1,0 +1,16 @@
+arch: slow
+image_size: 256
+temporal_window_size: 4
+temporal_downsampling: 16
+resnet_depth: 50
+resnet_num_groups: 1
+resnet_width_per_group: 64
+resnet_dropout_rate: 0.5
+resnet_final_batchnorm_zero_init: 1
+resnet_head_act: sigmoid
+weight_decay: 1e-7
+learning_rate: 0.1 # for 8 GPUs with batch_size 8
+max_epochs: 20
+loss: binary_cross_entropy_with_logits
+optimization_metric: mAP
+enable_detection: 1
