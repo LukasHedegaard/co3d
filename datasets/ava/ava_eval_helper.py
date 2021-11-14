@@ -149,6 +149,10 @@ def evaluate_ava(
         video_idx_to_name=video_idx_to_name,
     )
 
+    # Filter ground truth
+    keys = {f"{video_idx_to_name[int(m[0])]},{int(m[1]):04d}" for m in metadata}
+    groundtruth = [{k: v for k, v in g.items() if k in keys} for g in groundtruth]
+
     logger.info("Evaluating with %d unique GT frames." % len(groundtruth[0]))
     logger.info("Evaluating with %d unique detection frames" % len(detections[0]))
 

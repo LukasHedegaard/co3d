@@ -44,11 +44,6 @@ class AvaMetric(MetricMixin):
     def _metrics(cls):
         return {"ava": OptimisationDirection.MAX}
 
-    # def metrics_step(
-    #     self, preds: Tensor, targets: Tensor, *args, **kwargs
-    # ) -> MetricDict:
-    #     return {"ava": self._compute_mean_average_precision(preds, targets)}
-
     def metrics_epoch(
         self, preds: Tensor, targets: Tensor, *args, **kwargs
     ) -> MetricDict:
