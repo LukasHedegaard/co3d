@@ -404,7 +404,7 @@ def CoResNetRoIHead(
         return output
 
     def set_boxes(slf, boxes):
-        slf.boxes = [bxs[bxs[:, 0] != -1].float() for bxs in list(boxes)]
+        slf.boxes = boxes
 
     s0_roi.forward = partial(roi_align_forward, s0_roi)
     s0_roi.set_boxes = partial(set_boxes, s0_roi)
@@ -435,6 +435,8 @@ def CoResNetRoIHead(
             ),
         )
     )
+
+    modules.append(("squeeze", co.Lambda(lambda x: x.squeeze(-1).squeeze(-1))))
 
     seq = co.Sequential(OrderedDict(modules))
     seq.set_boxes = seq.s0_roi.set_boxes

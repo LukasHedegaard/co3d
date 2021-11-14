@@ -428,8 +428,10 @@ class Ava(torch.utils.data.Dataset):
             M = 25
             missing = M - len(boxes)
 
-            dummy_boxes = -np.ones_like(boxes[0])[None, :].repeat(missing, axis=0)
-            dummy_label_arrs = -np.ones_like(label_arrs[0])[None, :].repeat(
+            dummy_boxes = _DUMMY_VAL * np.ones_like(boxes[0])[None, :].repeat(
+                missing, axis=0
+            )
+            dummy_label_arrs = _DUMMY_VAL * np.ones_like(label_arrs[0])[None, :].repeat(
                 missing, axis=0
             )
 
@@ -437,7 +439,7 @@ class Ava(torch.utils.data.Dataset):
             ori_boxes = np.concatenate([ori_boxes, dummy_boxes])
             label_arrs = np.concatenate([label_arrs, dummy_label_arrs])
 
-        metadata = [[video_idx, sec]] * len(boxes)
+        metadata = np.array([[video_idx, sec]] * len(boxes))
 
         return (
             {
@@ -451,6 +453,40 @@ class Ava(torch.utils.data.Dataset):
             },
             idx,
         )
+
+
+_DUMMY_VAL = -1
+
+
+def preprocess_ava_batch(batch):
+    # Discard padded dummy values.
+    images = batch[0]["images"]
+    boxes = batch[0]["boxes"]
+    labels = batch[1]["labels"]
+    ori_boxes = batch[1]["ori_boxes"]
+    metadata = batch[1]["metadata"]
+    idx = batch[2]
+
+    # Split into to lists
+    sel = [x[:, 0] != _DUMMY_VAL for x in list(boxes)]
+    boxes = [x[sel[i]].float() for i, x in enumerate(boxes)]
+    labels = torch.cat([x[sel[i]].float() for i, x in enumerate(labels)])
+    ori_boxes = torch.cat([x[sel[i]].float() for i, x in enumerate(ori_boxes)])
+    metadata = torch.cat([x[sel[i]].float() for i, x in enumerate(metadata)])
+
+    # inds =
+    return (
+        {
+            "images": images,
+            "boxes": boxes,
+        },
+        {
+            "labels": labels,
+            "ori_boxes": ori_boxes,
+            "metadata": metadata,
+        },
+        idx,
+    )
 
 
 def ava_loss(loss_fn):

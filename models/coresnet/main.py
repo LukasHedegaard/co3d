@@ -7,7 +7,7 @@ from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from datasets.ava import AvaMetric, ava_loss
+from datasets.ava import AvaMetric, ava_loss, preprocess_ava_batch
 from models.common import Co3dBase
 from models.coresnet.modules.coresnet import CoResNet
 
@@ -109,7 +109,7 @@ class CoResNetRide(
         return c
 
     def __init__(self, hparams):
-        if "ava" == self.hparams.dataset:
+        if self.hparams.dataset == "ava":
             self.loss = ava_loss(self.loss)
             self.hparams.enable_detection = True
 
@@ -130,6 +130,12 @@ class CoResNetRide(
             align_detection=self.hparams.align_detection,
             temporal_fill=self.hparams.co3d_temporal_fill,
         )
+
+    def preprocess_batch(self, batch):
+        """Overloads method in ride.Lifecycle"""
+        if self.hparams.dataset == "ava":
+            batch = preprocess_ava_batch(batch)
+        return batch
 
     def forward(self, x):
         if self.hparams.enable_detection:
