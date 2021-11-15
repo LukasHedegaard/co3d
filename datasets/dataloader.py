@@ -55,7 +55,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
                 "thumos14",
                 "tvseries",
                 "charades",
-                "something-something-v2",
+                "ssv2",
                 "ava",
             ],
             strategy="constant",
@@ -197,7 +197,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics600": "classification",
             "kinetics3": "classification",
             "charades": "classification",
-            "something-something-v2": "classification",
+            "ssv2": "classification",
             "ava": "classification",
             "thumos14": "detection",
             "tvseries": "detection",
@@ -377,7 +377,7 @@ def train_val_test(
         Ds = TvSeries
     elif "charades" in data_path.lower():
         Ds = Charades
-    elif "something-something-v2" in data_path.lower():
+    elif "ssv2" in data_path.lower():
         Ds = Ssv2
     elif "ava" in data_path.lower():
         Ds = Ava
