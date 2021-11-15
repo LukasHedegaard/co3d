@@ -386,6 +386,8 @@ def CoResNetRoIHead(
         if input.is_quantized:
             input = input.dequantize()
 
+        slf.boxes = [b.to(device=input.device) for b in slf.boxes]
+
         output = torch.stack(
             [
                 roi_align(
