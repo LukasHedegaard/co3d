@@ -175,7 +175,7 @@ def run_evaluation(categories, groundtruth, detections, excluded_keys, verbose=T
     gt_keys = []
     pred_keys = []
 
-    for image_key in tqdm(boxes, desc="Adding ground truth images"):
+    for image_key in tqdm(boxes, desc="ava: Adding ground truth images"):
         if image_key in excluded_keys:
             logger.info(
                 (
@@ -204,7 +204,7 @@ def run_evaluation(categories, groundtruth, detections, excluded_keys, verbose=T
 
     boxes, labels, scores = detections
 
-    for image_key in tqdm(boxes, desc="Adding detected images"):
+    for image_key in tqdm(boxes, desc="ava: Adding detected images"):
         if image_key in excluded_keys:
             logger.info(
                 ("Found excluded timestamp in detections: %s. " "It will be ignored."),
