@@ -8,8 +8,8 @@ from ride.utils.logging import getLogger
 
 from . import ava_helper as ava_helper
 from . import cv2_transform as cv2_transform
-from . import transform as transform
-from . import utils as utils
+from .. import transform as transform
+from .. import utils as utils
 
 logger = getLogger(__name__)
 
