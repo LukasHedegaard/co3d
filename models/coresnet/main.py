@@ -22,6 +22,7 @@ class CoResNetRide(
     MetricSelector(
         kinetics400=TopKAccuracyMetric(1),
         charades=MeanAveragePrecisionMetric,
+        ssv2=TopKAccuracyMetric(1, 3, 5),
         ava=AvaMetric,
         default_config="ava",
     ),
