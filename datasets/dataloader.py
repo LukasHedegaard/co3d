@@ -18,6 +18,7 @@ from torchvision.transforms._transforms_video import (
 
 from datasets.ava import Ava
 from datasets.charades import Charades
+from datasets.ssv2 import Ssv2
 from datasets.kinetics import Kinetics
 from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
@@ -54,6 +55,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
                 "thumos14",
                 "tvseries",
                 "charades",
+                "something-something-v2",
                 "ava",
             ],
             strategy="constant",
@@ -195,6 +197,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics600": "classification",
             "kinetics3": "classification",
             "charades": "classification",
+            "something-something-v2": "classification",
             "ava": "classification",
             "thumos14": "detection",
             "tvseries": "detection",
@@ -374,6 +377,8 @@ def train_val_test(
         Ds = TvSeries
     elif "charades" in data_path.lower():
         Ds = Charades
+    elif "something-something-v2" in data_path.lower():
+        Ds = Ssv2
     elif "ava" in data_path.lower():
         Ds = Ava
     else:
