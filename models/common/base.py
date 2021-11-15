@@ -76,7 +76,7 @@ class Co3dBase(RideMixin):
 
         if "init" in self.hparams.co3d_forward_mode:
             num_init_frames = max(
-                self.module.receptive_field - 1,
+                self.module.receptive_field - self.module.padding - 1,
                 self.hparams.co3d_forward_frame_delay - 1,
             )
             self.hparams.frames_per_clip = (
@@ -128,10 +128,9 @@ class Co3dBase(RideMixin):
         result = None
 
         if "init" in self.hparams.co3d_forward_mode:
-            self.warm_up(tuple(x[:, :, 0].shape))
-
+            self.module.clean_state()
             num_init_frames = max(
-                self.module.receptive_field - 1,
+                self.module.receptive_field - self.module.padding - 1,
                 self.hparams.co3d_forward_frame_delay - 1,
             )
             self.module(x[:, :, :num_init_frames])  # = forward_steps don't save
