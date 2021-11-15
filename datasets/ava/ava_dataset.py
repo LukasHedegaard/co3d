@@ -396,7 +396,7 @@ class Ava(torch.utils.data.Dataset):
 
         # Load images of current clip.
         image_paths = [self._image_paths[video_idx][frame] for frame in seq]
-        img_proc_backend = "pytorch"  # or "cv2"
+        img_proc_backend = "cv2"  # or "cv2"
         imgs = utils.retry_load_images(image_paths, backend=img_proc_backend)
         if img_proc_backend == "pytorch":
             # T H W C -> T C H W.
