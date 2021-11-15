@@ -50,8 +50,6 @@ class Charades(torch.utils.data.Dataset):
         Load Charades data (frame paths, labels, etc. ) to a given Dataset object.
         The dataset could be downloaded from Chrades official website
         (https://allenai.org/plato/charades/).
-        Please see datasets/DATASET.md for more information about the data format.
-
 
         This dataset consider every video as a collection of video clips of fixed size, specified
         by ``frames_per_clip``, where the step in frames between each clip is given by
