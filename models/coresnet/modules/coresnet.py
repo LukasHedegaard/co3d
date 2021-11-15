@@ -60,10 +60,10 @@ _TEMPORAL_KERNEL_BASIS = {
 }
 
 # Size of stride on different res stages.
-_SPATIAL_STRIDES = {False: [1, 2, 2, 2], True: [1, 1, 1, 2]}  # key: enable_detection
+_SPATIAL_STRIDES = {False: [1, 2, 2, 2], True: [1, 2, 2, 1]}  # key: enable_detection
 
 # Size of dilation on different res stages.
-_SPATIAL_DILATIONS = {False: [1, 1, 1, 1], True: [1, 2, 2, 1]}  # key: enable_detection
+_SPATIAL_DILATIONS = {False: [1, 1, 1, 1], True: [1, 1, 1, 2]}  # key: enable_detection
 
 _POOL1 = {
     "2d": [1, 1, 1],
