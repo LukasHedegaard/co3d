@@ -111,6 +111,12 @@ class Co3dBase(RideMixin):
         # If conducting profiling, ensure that the model has been warmed up
         # so that it doesn't output placeholder values
         if self.hparams.profile_model:
+
+            if self.hparams.enable_detection:
+                # Pass in bounding boxes to RoIHead for AVA dataset.
+                dummy_boxes = [torch.tensor([[11.5200, 25.0880, 176.0000, 250.6240]])]
+                self.module[-1].set_boxes(dummy_boxes)
+
             logger.info("Warming model up")
             self.module(
                 torch.randn(
@@ -128,11 +134,6 @@ class Co3dBase(RideMixin):
                     m.state_index = 0
                 if hasattr(m, "stride_index"):
                     m.stride_index = 0
-
-            if self.hparams.enable_detection:
-                # Pass in bounding boxes to RoIHead for AVA dataset.
-                dummy_boxes = [torch.tensor([[11.5200, 25.0880, 176.0000, 250.6240]])]
-                self.module[-1].set_boxes(dummy_boxes)
 
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
