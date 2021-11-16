@@ -24,7 +24,7 @@ class CoResNetRide(
         charades=MeanAveragePrecisionMetric,
         ssv2=TopKAccuracyMetric(1, 3, 5),
         ava=AvaMetric,
-        default_config="ava",
+        default_config="ssv2",
     ),
 ):
     @staticmethod
