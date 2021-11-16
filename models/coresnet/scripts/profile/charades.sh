@@ -23,7 +23,6 @@ python $PROJECT/main.py \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode clip \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
     --profile_model \
 
 
@@ -33,7 +32,6 @@ python $PROJECT/main.py \
     --seed 42 \
     --gpus $GPUS \
     --from_hparams_file models/coresnet/hparams/slow_8x8_charades.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
     --batch_size 1 \
     --benchmark True \
     --logging_backend wandb \
@@ -49,7 +47,6 @@ python $PROJECT/main.py \
     --seed 42 \
     --gpus $GPUS \
     --from_hparams_file models/coresnet/hparams/slow_8x8_charades.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
     --batch_size 1 \
     --benchmark True \
     --logging_backend wandb \
