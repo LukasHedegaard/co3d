@@ -5,12 +5,12 @@ from itertools import chain as chain
 from pathlib import Path
 from typing import List
 import json
-import pandas as pd
 import torch
 import torch.utils.data
 from ride.utils.logging import getLogger
 from torchvision.io import read_image
 from . import utils as utils
+import numpy as np
 
 # from ride.utils.env import CACHE_PATH
 # from joblib import Memory
@@ -125,35 +125,17 @@ class Ssv2(torch.utils.data.Dataset):
         Returns:
             seq (list): the indexes of sampled frames from the video.
         """
-        temporal_clip_index = (
-            -1
-            if self.split in ["train", "val"]
-            else self.spatial_temporal_idx[index] // self.num_spatial_crops
-        )
-
         video_length = len(self.path_to_videos[index])
-        assert video_length == len(self.labels[index])
 
-        clip_length = (self.frames_per_clip - 1) * self.temporal_downsampling + 1
-        if temporal_clip_index == -1:
-            if clip_length > video_length:
-                start = random.randint(video_length - clip_length, 0)
+        seg_size = float(video_length - 1) / self.frames_per_clip
+        seq = []
+        for i in range(self.frames_per_clip):
+            start = int(np.round(seg_size * i))
+            end = int(np.round(seg_size * (i + 1)))
+            if self.split == "train":
+                seq.append(random.randint(start, end))
             else:
-                start = random.randint(0, video_length - clip_length)
-        else:
-            if self.num_ensemble_views > 1:
-                gap = float(max(video_length - clip_length, 0)) / (
-                    self.num_ensemble_views - 1
-                )
-                start = int(round(gap * temporal_clip_index))
-            else:
-                # Select video center
-                start = max(video_length - clip_length, 0) // 2
-
-        seq = [
-            max(min(start + i * self.temporal_downsampling, video_length - 1), 0)
-            for i in range(self.frames_per_clip)
-        ]
+                seq.append((start + end) // 2)
 
         return seq
 
@@ -181,26 +163,7 @@ class Ssv2(torch.utils.data.Dataset):
         )
         video = video.permute(0, 2, 3, 1)  # (T, C, H, W) -> (T, H, W, C)
 
-        # Load labels for selection and aggregate to clip-level labels
-        # Use video-level labels for testing
-        label_selection = (
-            slice(frame_inds[0], frame_inds[-1])
-            if self.split == "train"
-            else slice(None)
-        )
-        label_set = set(self.labels[index][label_selection])
-        label_inds = torch.tensor(
-            [
-                int(lbl)
-                for lbl in set(
-                    chain.from_iterable([str(lbls).split(",") for lbls in label_set])
-                )
-                if lbl != "nan"
-            ],
-            dtype=torch.long,
-        )
-        label = torch.zeros(len(self.classes))  # multi-hot encoding
-        label[label_inds] = 1
+        label = self.labels[index]
 
         audio = None
 
