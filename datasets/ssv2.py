@@ -125,17 +125,34 @@ class Ssv2(torch.utils.data.Dataset):
         Returns:
             seq (list): the indexes of sampled frames from the video.
         """
+        temporal_clip_index = (
+            -1
+            if self.split in ["train", "val"]
+            else self.spatial_temporal_idx[index] // self.num_spatial_crops
+        )
+
         video_length = len(self.path_to_videos[index])
 
-        seg_size = float(video_length - 1) / self.frames_per_clip
-        seq = []
-        for i in range(self.frames_per_clip):
-            start = int(np.round(seg_size * i))
-            end = int(np.round(seg_size * (i + 1)))
-            if self.split == "train":
-                seq.append(random.randint(start, end))
+        clip_length = (self.frames_per_clip - 1) * self.temporal_downsampling + 1
+        if temporal_clip_index == -1:
+            if clip_length > video_length:
+                start = random.randint(video_length - clip_length, 0)
             else:
-                seq.append((start + end) // 2)
+                start = random.randint(0, video_length - clip_length)
+        else:
+            if self.num_ensemble_views > 1:
+                gap = float(max(video_length - clip_length, 0)) / (
+                    self.num_ensemble_views - 1
+                )
+                start = int(round(gap * temporal_clip_index))
+            else:
+                # Select video center
+                start = max(video_length - clip_length, 0) // 2
+
+        seq = [
+            max(min(start + i * self.temporal_downsampling, video_length - 1), 0)
+            for i in range(self.frames_per_clip)
+        ]
 
         return seq
 
@@ -151,18 +168,32 @@ class Ssv2(torch.utils.data.Dataset):
             label (int): the label of the current video.
             index (int): the index of the video.
         """
+        num_retries = 10
+        for _ in range(num_retries):
+            video = None
+            frame_inds = self.get_seq_frames(index)
+            try:
+                # Load image frames
+                video = torch.stack(
+                    [
+                        read_image(
+                            str(self.data_root / self.path_to_videos[index][frame_ind])
+                        )
+                        for frame_ind in frame_inds
+                    ]
+                )
+            except Exception as e:
+                logger.info("Failed to load video from with error {}".format(e))
 
-        frame_inds = self.get_seq_frames(index)
+            if video is None:
+                index = random.randint(0, len(self.path_to_videos) - 1)
 
-        # Load image frames
-        video = torch.stack(
-            [
-                read_image(str(self.data_root / self.path_to_videos[index][frame_ind]))
-                for frame_ind in frame_inds
-            ]
-        )
+        if video is None:
+            raise RuntimeError(
+                "Failed to fetch video after {} retries.".format(num_retries)
+            )
+
         video = video.permute(0, 2, 3, 1)  # (T, C, H, W) -> (T, H, W, C)
-
         label = self.labels[index]
 
         audio = None
