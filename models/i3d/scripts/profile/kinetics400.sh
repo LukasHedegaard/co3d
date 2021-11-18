@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROJECT=models/i3d
-DATASET=kinetics400micro
+DATASET=kinetics400
 
 # CPU
 python $PROJECT/main.py \

@@ -6,8 +6,7 @@ fi
 
 PROJECT=models/coresnet
 DATASET=kinetics400
-GPUS=2
-DISTRIBUTED_BACKEND=ddp
+GPUS=1
 PRECISION=16
 
 # Run test sequence ######################
@@ -25,7 +24,6 @@ python $PROJECT/main.py \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --co3d_forward_mode clip \
 
 
@@ -42,7 +40,6 @@ python $PROJECT/main.py \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --co3d_forward_mode init_frame \
   
 
@@ -59,7 +56,6 @@ python $PROJECT/main.py \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --temporal_window_size 64 \
     --co3d_forward_mode init_frame \
 

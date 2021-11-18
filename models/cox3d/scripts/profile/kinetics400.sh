@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# NB: For GPU-based devices, the largest bacth size possible will result in the highest throuhgput.
+
 PROJECT=models/cox3d
 DATASET=kinetics400
+BATCH_SIZE=64
 
 GPUS="1" 
 for MODEL in s m l
@@ -15,7 +18,7 @@ do
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
-        --batch_size 64 \
+        --batch_size $BATCH_SIZE \
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --profile_model \
         --log_level INFO \

@@ -7,7 +7,6 @@ fi
 PROJECT=models/coresnet
 DATASET=charades
 GPUS=2
-DISTRIBUTED_BACKEND=ddp
 PRECISION=32
 
 # Run test sequence ######################
@@ -25,7 +24,6 @@ python $PROJECT/main.py \
     --precision $PRECISION \
     --co3d_forward_mode clip \
     --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --test \
 
 
@@ -42,7 +40,6 @@ python $PROJECT/main.py \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode frame \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --test \
   
 
@@ -60,6 +57,5 @@ python $PROJECT/main.py \
     --precision $PRECISION \
     --temporal_window_size 64 \
     --co3d_forward_mode frame \
-    --distributed_backend $DISTRIBUTED_BACKEND \
     --test \
 

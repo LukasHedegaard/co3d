@@ -1,13 +1,13 @@
 #!/bin/bash
 
 PROJECT=models/co3d
-DATASET=kinetics400micro
+DATASET=kinetics400
 GPUS=1
 
-for MODEL in s m
+for MODEL in xs s m
 do
 
-    CUDA_VISIBLE_DEVICES=4 python $PROJECT/main.py \
+    python $PROJECT/main.py \
         --id x3d_profile_kinetics400 \
         --results_log_dir $PROJECT \
         --dataset $DATASET \
@@ -21,14 +21,14 @@ do
 
 done
 
-CUDA_VISIBLE_DEVICES=4 python $PROJECT/main.py \
-        --id x3d_profile_kinetics400 \
-        --results_log_dir $PROJECT \
-        --dataset $DATASET \
-        --gpus $GPUS \
-        --seed 123 \
-        --batch_size 32 \
-        --from_hparams_file $PROJECT/hparams/l.yaml \
-        --profile_model \
-        --log_level DEBUG \
-        --precision 16 \
+python $PROJECT/main.py \
+    --id x3d_profile_kinetics400 \
+    --results_log_dir $PROJECT \
+    --dataset $DATASET \
+    --gpus $GPUS \
+    --seed 123 \
+    --batch_size 32 \
+    --from_hparams_file $PROJECT/hparams/l.yaml \
+    --profile_model \
+    --log_level DEBUG \
+    --precision 16 \

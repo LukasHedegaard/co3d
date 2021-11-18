@@ -2,7 +2,7 @@
 
 PROJECT=models/slowfast
 DATASET=kinetics400
-GPUS="4,"
+GPUS="1"
 
 for MODEL in 4x16_R50 8x8_R50
 do
