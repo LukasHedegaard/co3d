@@ -25,7 +25,6 @@ do
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
         --batch_size 32 \
-        --log_level INFO \
         --co3d_forward_mode init_frame \
         --co3d_temporal_fill replicate \
         --co3d_num_forward_frames 1 \
@@ -57,7 +56,6 @@ do
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
         --batch_size 16 \
-        --log_level INFO \
         --co3d_forward_mode init_frame \
         --co3d_temporal_fill replicate \
         --co3d_num_forward_frames 1 \
@@ -90,7 +88,6 @@ do
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
         --batch_size 8 \
-        --log_level INFO \
         --co3d_forward_mode init_frame \
         --co3d_temporal_fill replicate \
         --co3d_num_forward_frames 1 \
@@ -126,7 +123,6 @@ do
             --from_hparams_file models/x3d/hparams/$MODEL.yaml \
             --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
             --batch_size 16 \
-            --log_level INFO \
             --co3d_forward_mode init_frame \
             --co3d_temporal_fill replicate \
             --co3d_num_forward_frames 1 \
@@ -155,7 +151,6 @@ horovodrun -np 4 python $PROJECT/main.py \
             --from_hparams_file models/x3d/hparams/$MODEL.yaml \
             --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
             --batch_size 8 \
-            --log_level INFO \
             --co3d_forward_mode init_frame \
             --co3d_temporal_fill replicate \
             --co3d_num_forward_frames 1 \
@@ -181,7 +176,6 @@ do
             --from_hparams_file models/x3d/hparams/$MODEL.yaml \
             --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
             --batch_size 16 \
-            --log_level INFO \
             --co3d_forward_mode init_frame \
             --co3d_temporal_fill replicate \
             --co3d_num_forward_frames 1 \
@@ -217,7 +211,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -243,7 +236,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -269,7 +261,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -294,7 +285,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -321,7 +311,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -348,7 +337,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 16 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -375,7 +363,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 4 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -401,7 +388,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 6 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
@@ -426,7 +412,6 @@ horovodrun -np 4 python $PROJECT/main.py \
     --from_hparams_file models/x3d/hparams/$MODEL.yaml \
     --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
     --batch_size 6 \
-    --log_level INFO \
     --co3d_forward_mode init_frame \
     --co3d_temporal_fill replicate \
     --co3d_num_forward_frames 1 \
