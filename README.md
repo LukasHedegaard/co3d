@@ -122,15 +122,15 @@ Overview tables for scripts used to download weights, run the model test-sequenc
 ## Download weights
 | Model         | Dataset  | Download |
 | -------       | -------- | -------- |
-| I3D-R50       | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/I3D_8x8_R50.pkl)
-| R(2+1)D-18    | Kinetics | [link](https://download.pytorch.org/models/r2plus1d_18-91a641e6.pth)
-| SlowFast-8x8  | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_8x8_R50.pkl)
-| SlowFast-4x16 | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_4x16_R50.pkl)
-| (Co)X3D-XS    | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_xs.pyth)
-| (Co)X3D-S     | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_s.pyth)
-| (Co)X3D-M     | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_m.pyth)
-| (Co)X3D-L     | Kinetics | [link](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_l.pyth)
-| (Co)Slow-8x8  | Charades | [link](https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOW_8x8_R50.pyth)
+| I3D-R50       | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/I3D_8x8_R50.pkl)
+| R(2+1)D-18    | Kinetics | [download](https://download.pytorch.org/models/r2plus1d_18-91a641e6.pth)
+| SlowFast-8x8  | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_8x8_R50.pkl)
+| SlowFast-4x16 | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_4x16_R50.pkl)
+| (Co)X3D-XS    | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_xs.pyth)
+| (Co)X3D-S     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_s.pyth)
+| (Co)X3D-M     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_m.pyth)
+| (Co)X3D-L     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_l.pyth)
+| (Co)Slow-8x8  | Charades | [download](https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOW_8x8_R50.pyth)
 
 
 ## Evaluate on Kinetics400
@@ -139,11 +139,11 @@ The scripts should be executed from project root.
 
 | Model         | Script |
 | -------       | -------- | 
-| I3D-R50       | [link](models/i3d/scripts/test/kinetics400.sh) | 
-| R(2+1)D-18    | [link](models/r2plus1d/scripts/test/kinetics400.sh) | 
-| SlowFast      | [link](models/slowfast/scripts/test/kinetics400.sh) | 
-| X3D           | [link](models/x3d/scripts/test/kinetics400.sh) | 
-| CoX3D         | [link](models/i3d/scripts/test/kinetics400.sh) | 
+| I3D-R50       | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
+| R(2+1)D-18    | [`./models/r2plus1d/scripts/test/kinetics400.sh`](models/r2plus1d/scripts/test/kinetics400.sh) | 
+| SlowFast      | [`./models/slowfast/scripts/test/kinetics400.sh`](models/slowfast/scripts/test/kinetics400.sh) | 
+| X3D           | [`./models/x3d/scripts/test/kinetics400.sh`](models/x3d/scripts/test/kinetics400.sh) | 
+| CoX3D         | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
 
 
 ## Evaluate on Charades
@@ -152,7 +152,7 @@ The scripts should be executed from project root.
 
 | Model         | Script |
 | -------       | -------- | 
-| (Co)Slow-8x8       | [link](./models/coresnet/scripts/test/charades.sh) | 
+| (Co)Slow-8x8       | [`./models/coresnet/scripts/test/charades.sh`](models/coresnet/scripts/test/charades.sh) | 
 
 
 ## Benchmark FLOPs and throughput
@@ -160,12 +160,12 @@ The scripts should be executed from project root.
 
 | Model         | Script |
 | -------       | -------- | 
-| I3D-R50       | [link](models/i3d/scripts/profile/kinetics400.sh) | 
-| R(2+1)D-18    | [link](models/r2plus1d/scripts/profile/kinetics400.sh) | 
-| SlowFast      | [link](models/slowfast/scripts/profile/kinetics400.sh) | 
-| (Co)Slow         | [link](models/coresnet/scripts/profile/charades.sh) | 
-| X3D           | [link](models/x3d/scripts/profile/kinetics400.sh) | 
-| CoX3D         | [link](models/cox3d/scripts/profile/kinetics400.sh) | 
+| I3D-R50       | [`./models/i3d/scripts/profile/kinetics400.sh`](models/i3d/scripts/profile/kinetics400.sh) | 
+| R(2+1)D-18    | [`./models/r2plus1d/scripts/profile/kinetics400.sh`](models/r2plus1d/scripts/profile/kinetics400.sh) | 
+| SlowFast      | [`./models/slowfast/scripts/profile/kinetics400.sh`](models/slowfast/scripts/profile/kinetics400.sh) | 
+| (Co)Slow         | [`./models/coresnet/scripts/profile/charades.sh`](models/coresnet/scripts/profile/charades.sh) | 
+| X3D           | [`./models/x3d/scripts/profile/kinetics400.sh`](models/x3d/scripts/profile/kinetics400.sh) | 
+| CoX3D         | [`./models/cox3d/scripts/profile/kinetics400.sh`](models/cox3d/scripts/profile/kinetics400.sh) | 
 
 
 # Citation   
