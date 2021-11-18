@@ -13,7 +13,6 @@ do
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
         --batch_size 32 \
-        --log_level DEBUG \
         --temporal_downsampling $TEMPORAL_DOWNSAMPLING \
         --benchmark True \
         --validate \
@@ -36,7 +35,6 @@ do
         --batch_size 16 \
         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
         --finetune_from_weights $PROJECT/weights/x3d_$MODEL.pyth \
-        --log_level DEBUG \
         --validate \
         --test_ensemble 0 \
         --distributed_backend horovod \
@@ -59,7 +57,6 @@ do
         --batch_size 8 \
         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
         --finetune_from_weights $PROJECT/weights/x3d_$MODEL.pyth \
-        --log_level DEBUG \
         --validate \
         --test_ensemble 0 \
         --distributed_backend horovod \

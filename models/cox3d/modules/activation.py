@@ -1,16 +1,5 @@
+import continual as co
 import torch
-from torch.nn.modules.activation import Softmax
-
-from .utils import FillMode
-
-
-def convert_softmax(
-    instance: torch.nn.Softmax,
-    window_size: int = None,  # Not used: only there to satisfy interface
-    temporal_fill: FillMode = "replicate",  # Not used: only there to satisfy interface
-):
-    assert instance.dim <= 4, "Cannot convert Softmax with dim > 4."
-    return Softmax(dim=3 if instance.dim == 4 else instance.dim)
 
 
 class Swish(torch.nn.Module):
@@ -37,3 +26,6 @@ class SwishEfficient(torch.autograd.Function):
         x = ctx.saved_variables[0]
         sigmoid_x = torch.sigmoid(x)
         return grad_output * (sigmoid_x * (1 + x * (1 - sigmoid_x)))
+
+
+co.convert.register(Swish, co.forward_stepping(Swish))

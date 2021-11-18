@@ -7,7 +7,6 @@ from typing import Callable, Iterable, Sequence, Tuple, Union
 import numpy as np
 import torch
 import torch.nn.functional as F
-import torchvision.transforms._functional_video as V
 from torchvision.transforms.functional import _is_pil_image
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -187,7 +186,8 @@ class CropVideo(object):
             (C, T, crop_size, crop_size)
         """
         i, j, h, w = self.get_positions(clip)
-        return V.crop(clip, i, j, h, w)
+        assert len(clip.size()) == 4, "clip should be a 4D tensor"
+        return clip[..., i : i + h, j : j + w]
 
     def __repr__(self):
         return f"{self.__class__.__name__} (crop_size={self.crop_size}, position='{self.position}')"
@@ -229,7 +229,10 @@ class ResizeVideo:
             torch.tensor: Rescaled video clip.
                 size is (C, T, H, W)
         """
-        return V.resize(clip, self.size, self.interpolation)
+        assert len(self.size) == 2, "target size should be tuple (height, width)"
+        return torch.nn.functional.interpolate(
+            clip, size=self.size, mode=self.interpolation, align_corners=False
+        )
 
     def __repr__(self):
         return self.__class__.__name__ + "(size={0}, interpolation={1})".format(
@@ -254,7 +257,12 @@ class DeNormalizeVideo:
         Returns:
             denormalized clip (torch.tensor): Size is (C, T, H, W)
         """
-        assert V._is_tensor_video_clip(clip), "clip should be a 4D torch.tensor"
+        if not torch.is_tensor(clip):
+            raise TypeError("clip should be Tensor. Got %s" % type(clip))
+
+        if not clip.ndimension() == 4:
+            raise ValueError("clip should be 4D. Got %dD" % clip.dim())
+
         if not self.inplace:
             clip = clip.clone()
         mean = torch.as_tensor(self.mean, dtype=clip.dtype, device=clip.device)

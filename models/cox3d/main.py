@@ -1,21 +1,24 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
-from datasets import ActionRecognitionDatasets
-from models.cox3d.modules.x3d import CoX3D
+
 from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
-from ride.optimizers import SgdCyclicLrOptimizer
+from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
+
+from datasets import ActionRecognitionDatasets
+from models.common import Co3dBase
+from models.cox3d.modules.x3d import CoX3D
 
 logger = getLogger("CoX3D")
 
 
 class CoX3DRide(
     RideModule,
-    CoX3D,
+    Co3dBase,
     ActionRecognitionDatasets,
-    SgdCyclicLrOptimizer,
-    TopKAccuracyMetric(1, 3, 5),
+    SgdOneCycleOptimizer,
+    TopKAccuracyMetric(1),
 ):
     @staticmethod
     def configs() -> Configs:
@@ -116,73 +119,13 @@ class CoX3DRide(
             strategy="choice",
             description="If true, initialize the gamma of the final BN of each block to zero.",
         )
-        c.add(
-            name="co3d_temporal_fill",
-            type=str,
-            default="replicate",
-            choices=["zeros", "replicate"],
-            strategy="choice",
-            description="Fill mode for samples along temporal dimension. This is used at state initialisation and in `forward3d` as padding along the temporal dimension.",
-        )
-        c.add(
-            name="co3d_forward_mode",
-            type=str,
-            default="frame",
-            choices=["clip", "frame", "init_frame", "clip_init_frame"],
-            strategy="choice",
-            description="Whether to compute clip or frame during forward. If 'clip_init_frame', the network is initialised with a clip and then frame forwards are applied.",
-        )
-        c.add(
-            name="co3d_num_forward_frames",
-            type=int,
-            default=1,
-            description="The number of frames to forward and average over. This is unused for `co3d_forward_mode='clip'`.",
-        )
-        c.add(
-            name="co3d_forward_frame_delay",
-            type=int,
-            default=-1,
-            strategy="choice",
-            description="Number of frame forwards prior to final prediction in 'clip_init_frame' mode. If '-1', a delay of clip_length - 1 is used",
-        )
-
         return c
 
     def __init__(self, hparams):
-        # Inflate frames_per_clip of dataset, to have some frames for initialization
-        self.temporal_window_size = self.hparams.frames_per_clip
-
-        if "clip" not in self.hparams.co3d_forward_mode:
-            self.hparams.frames_per_clip = 0
-
-        if "frame" in self.hparams.co3d_forward_mode:
-            assert self.hparams.co3d_num_forward_frames > 0
-            self.hparams.frames_per_clip += self.hparams.co3d_num_forward_frames
-
-        if "init" in self.hparams.co3d_forward_mode:
-            if self.hparams.co3d_forward_frame_delay < 0:
-                self.hparams.co3d_forward_frame_delay = (
-                    self.temporal_window_size
-                    + 1
-                    + self.hparams.co3d_forward_frame_delay
-                )
-            self.hparams.frames_per_clip += self.hparams.co3d_forward_frame_delay
-
-        # From ActionRecognitionDatasets
-        frames_per_clip = (
-            1
-            if self.hparams.co3d_forward_mode == "frame"
-            else self.hparams.frames_per_clip
-        )
-        image_size = self.hparams.image_size
-        dim_in = 3
-        self.input_shape = (dim_in, frames_per_clip, image_size, image_size)
-
-        CoX3D.__init__(
-            self,
-            dim_in,
-            image_size,
-            self.temporal_window_size,
+        self.module = CoX3D(
+            self.dim_in,
+            self.hparams.image_size,
+            self.hparams.temporal_window_size,
             self.dataloader.num_classes,  # from ActionRecognitionDatasets
             self.hparams.x3d_conv1_dim,
             self.hparams.x3d_conv5_dim,
@@ -198,64 +141,8 @@ class CoX3DRide(
             self.hparams.x3d_fc_std_init,
             self.hparams.x3d_final_batchnorm_zero_init,
             self.hparams.co3d_temporal_fill,
+            se_scope="frame",
         )
-
-        receptive_field = (
-            sum(
-                [
-                    m.kernel_size[0] - 1
-                    for m in self.modules()
-                    if "ConvCo3d" in str(type(m))
-                ]
-            )
-            + self.temporal_window_size
-        )
-        logger.info(f"Model receptive field: {receptive_field} frames")
-
-    def forward(self, x):
-
-        if not hasattr(self, "_current_input_shape"):
-            self._current_input_shape = x.shape
-
-        if self._current_input_shape != x.shape:
-            # Clean up state to accomodate new shape
-            for m in self.modules():
-                if hasattr(m, "clean_state"):
-                    m.clean_state()
-
-        result = None
-
-        # Forward whole clip to init state
-        if "clip" in self.hparams.co3d_forward_mode:
-            result = CoX3D.forward3d(self, x[:, :, : self.temporal_window_size])
-
-        # Flush state with intermediate frames
-        if "init" in self.hparams.co3d_forward_mode:
-            # Saturate by running example
-            for i in range(1, self.hparams.co3d_forward_frame_delay + 1):
-                CoX3D.forward(
-                    self,
-                    x[
-                        :,
-                        :,
-                        (
-                            self.temporal_window_size
-                            if "clip" in self.hparams.co3d_forward_mode
-                            else 0
-                        )
-                        + i,
-                    ],
-                )
-
-        # Compute output for last frame(s)
-        if "frame" in self.hparams.co3d_forward_mode:
-            # Average over a number of frames
-            result = CoX3D.forward(self, x[:, :, -self.hparams.co3d_num_forward_frames])
-            for i in reversed(range(1, self.hparams.co3d_num_forward_frames)):
-                result += CoX3D.forward(self, x[:, :, -i])
-            result /= self.hparams.co3d_num_forward_frames
-
-        return result
 
 
 if __name__ == "__main__":

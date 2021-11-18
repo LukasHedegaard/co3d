@@ -34,12 +34,13 @@ Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further traini
   <br>
   <br>
 
-  <img src="figures/results.png">
+<img src="figures/results.png">
 <br>
   Benchmark of state-of-the-art methods on Kinetics-400. The noted accuracy is the single clip or frame top-1 score using RGB as the only input-modality. 
   The performance was evaluated using publicly available pre-trained models without any further fine-tuning.
   For speed comparison, evaluations per second denote frames per second for the CoX3D models and clips per second for the remaining models. Speed results are the mean +- std of 100 measurements. 
 </div>
+
 
 
 # Setup
@@ -63,68 +64,108 @@ Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further traini
 
 1. Install [FFMPEG](https://ffmpeg.org) and [UNRAR](https://www.rarlab.com/rar_add.htm)
 
-1. Fill in the information on your dataset folder path in the `.env` file
+1. Fill in the information on your dataset folder path in the `.env` file:
+    ```bash
+    DATASETS_PATH=/path/to/datasets
+    LOGS_PATH=/path/to/logs
+    CACHE_PATH=.cache
+    ```
 
 1. Download dataset using [these instructions](datasets/README.md)
 
 
-# Usage
-The project code written in PyTorch and uses [Ride](https://github.com/LukasHedegaard/ride) to provide implementations of training, evaluations, and benchmarking methods.
-A plethora of usage options are available, which are best explored in the [Ride docs](https://ride.readthedocs.io) or the command-line `--help`.
+# Models
 
-This repository contains the implementations of Continual X3D (CoX3D), as well as number of 3D-CNN baselines.
-
-Each model has its own folder with a self-contained implementation, scripts, weight download utilities, hparams and profiling results.
-
-
-## CoX3D
-
-_CoX3D_ is Continual-CNN implementation of X3D.
+## [CoX3D](models/cox3d/README.md)
+_CoX3D_ is the Continual-CNN implementation of X3D.
 In contrast to regular 3D CNNs, which take a whole video clip as input, Continual CNNs operate frame-by-frame and can thus speed up computation by a significant margin.
 
-See the [CoX3D README](models/cox3d/README.md) and command-line help
-```bash
-python models/cox3d/main.py --help 
-```
+
+## [CoSlow](models/coresnet/README.md)
+_CoSlow_ is the Continual-CNN implementation of Slow.
 
 
-## X3D
+
+## [X3D](models/x3d/README.md)
 _X3D_ [[ArXiv](https://arxiv.org/abs/2004.04730), [Repo](https://github.com/facebookresearch/SlowFast)] is a family of 3D variants of the EfficientNet achitecture, which produce state-of-the-art results for lightweight human activity recognition.
 
-See the [X3D README](models/x3d/README.md) and command-line help
-```bash
-python models/x3d/main.py --help 
-```
 
-
-## R(2+1)D
+## [R(2+1)D](models/r2plus1d/README.md)
 _R(2+1)D_ [[ArXiv](https://arxiv.org/abs/1705.07750), [Repo](https://pytorch.org/vision/stable/models.html#torchvision.models.video.r2plus1d_18)] is a CNN for activity recognition, which separates the 3D convolution into a spatial 2D convolution and a temporal 1D convolution in order to reduce the number of parameters and increase the network efficiency.
 
-See the command-line help
-```bash
-python models/r2plus1d/main.py --help 
-```
 
-
-## I3D
+## [I3D](models/i3d/README.md)
 _I3D_ [[ArXiv](https://arxiv.org/abs/1705.07750), [Repo](https://github.com/deepmind/kinetics-i3d)] is a 3D CNN for activity recognition, proposed to "inflate" the weights from a 2D CNN pretrained on ImageNet in the initialisation of the 3D CNN, thereby improving accuracy and reducing training time.
 
 The implementation here is a port of the one found in the [SlowFast Repo](https://github.com/facebookresearch/SlowFast).
 
-See the [I3D README](models/i3d/README.md) and command-line help:
+
+## [SlowFast](models/slowfast/README.md)
+_SlowFast_ [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com/facebookresearch/SlowFast)] is two-stream 3D CNNs architecture for video-recognition. The structure includes two pathways with one pathway operating at a slower frame-rate than the other.
+
+
+## [Slow](models/coresnet/README.md)
+_Slow_ is the "slow" branch of the SlowFast network [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com/facebookresearch/SlowFast)]
+
+# Usage
+The project code written in PyTorch and uses [Ride](https://github.com/LukasHedegaard/ride) to provide implementations of training, evaluations, and benchmarking methods.
+A plethora of usage options are available, which are best explored in the [Ride docs](https://ride.readthedocs.io) or the command-line help, e.g.:
 ```bash
-python models/i3d/main.py --help 
+python models/cox3d/main.py --help 
 ```
 
+This repository contains the implementations of Continual X3D (CoX3D), as well as number of 3D-CNN baselines.
 
-## SlowFast
-_SlowFast_ [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com/facebookresearch/SlowFast)] is a family of 3D CNNs for video-recognition, which produce state-of-the-art results for lightweight human activity recognition. 
-They are structured with two pathways with one pathway operating at a slower frame-rate than the other.
+Each model has its own folder with a self-contained implementation, scripts, weight download utilities, hparams and profiling results. 
+Overview tables for scripts used to download weights, run the model test-sequences, and throughput benchmarks are found below:
 
-See the [SlowFast README](models/slowfast/README.md) and command-line help
-```bash
-python models/slowfast/main.py --help 
-```
+## Download weights
+| Model         | Dataset  | Download |
+| -------       | -------- | -------- |
+| I3D-R50       | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/I3D_8x8_R50.pkl)
+| R(2+1)D-18    | Kinetics | [download](https://download.pytorch.org/models/r2plus1d_18-91a641e6.pth)
+| SlowFast-8x8  | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_8x8_R50.pkl)
+| SlowFast-4x16 | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_4x16_R50.pkl)
+| (Co)X3D-XS    | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_xs.pyth)
+| (Co)X3D-S     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_s.pyth)
+| (Co)X3D-M     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_m.pyth)
+| (Co)X3D-L     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_l.pyth)
+| (Co)Slow-8x8  | Charades | [download](https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOW_8x8_R50.pyth)
+
+
+## Evaluate on Kinetics400
+Evaluate the 1-clip accuracy of pretrained models. 
+The scripts should be executed from project root.
+
+| Model         | Script |
+| -------       | -------- | 
+| I3D-R50       | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
+| R(2+1)D-18    | [`./models/r2plus1d/scripts/test/kinetics400.sh`](models/r2plus1d/scripts/test/kinetics400.sh) | 
+| SlowFast      | [`./models/slowfast/scripts/test/kinetics400.sh`](models/slowfast/scripts/test/kinetics400.sh) | 
+| X3D           | [`./models/x3d/scripts/test/kinetics400.sh`](models/x3d/scripts/test/kinetics400.sh) | 
+| CoX3D         | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
+
+
+## Evaluate on Charades
+Evaluate the 1-clip accuracy of pretrained models. 
+The scripts should be executed from project root.
+
+| Model         | Script |
+| -------       | -------- | 
+| (Co)Slow-8x8       | [`./models/coresnet/scripts/test/charades.sh`](models/coresnet/scripts/test/charades.sh) | 
+
+
+## Benchmark FLOPs and throughput
+The scripts should be executed from project root.
+
+| Model         | Script |
+| -------       | -------- | 
+| I3D-R50       | [`./models/i3d/scripts/profile/kinetics400.sh`](models/i3d/scripts/profile/kinetics400.sh) | 
+| R(2+1)D-18    | [`./models/r2plus1d/scripts/profile/kinetics400.sh`](models/r2plus1d/scripts/profile/kinetics400.sh) | 
+| SlowFast      | [`./models/slowfast/scripts/profile/kinetics400.sh`](models/slowfast/scripts/profile/kinetics400.sh) | 
+| (Co)Slow         | [`./models/coresnet/scripts/profile/charades.sh`](models/coresnet/scripts/profile/charades.sh) | 
+| X3D           | [`./models/x3d/scripts/profile/kinetics400.sh`](models/x3d/scripts/profile/kinetics400.sh) | 
+| CoX3D         | [`./models/cox3d/scripts/profile/kinetics400.sh`](models/cox3d/scripts/profile/kinetics400.sh) | 
 
 
 # Citation   

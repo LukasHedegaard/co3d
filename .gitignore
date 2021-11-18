@@ -134,3 +134,6 @@ dmypy.json
 # Models
 *.pyth
 *.pkl
+
+logs/
+.vscode/

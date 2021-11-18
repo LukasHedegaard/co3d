@@ -10,7 +10,6 @@ from collections import OrderedDict
 
 import numpy as np
 import torch
-
 from ride.utils.logging import getLogger
 
 logger = getLogger(__name__)
@@ -26,7 +25,10 @@ def get_name_convert_func():
     pairs = [
         # ------------------------------------------------------------
         # 'nonlocal_conv3_1_theta_w' -> 's3.pathway0_nonlocal3.conv_g.weight'
-        [r"^nonlocal_conv([0-9]+)_([0-9]+)_(.*)", r"s\1.pathway0_nonlocal\2_\3",],
+        [
+            r"^nonlocal_conv([0-9]+)_([0-9]+)_(.*)",
+            r"s\1.pathway0_nonlocal\2_\3",
+        ],
         # 'theta' -> 'conv_theta'
         [r"^(.*)_nonlocal([0-9]+)_(theta)(.*)", r"\1_nonlocal\2.conv_\3\4"],
         # 'g' -> 'conv_g'
@@ -43,7 +45,10 @@ def get_name_convert_func():
         # 't_pool1_subsample' -> 's1_fuse.conv_f2s'
         [r"^t_pool1_subsample_(.*)", r"s1_fuse.conv_f2s.\1"],
         # 't_res4_5_branch2c_bn_subsample_bn_rm' -> 's4_fuse.conv_f2s.bias'
-        [r"^t_res([0-9]+)_([0-9]+)_branch2c_bn_subsample_bn_(.*)", r"s\1_fuse.bn.\3",],
+        [
+            r"^t_res([0-9]+)_([0-9]+)_branch2c_bn_subsample_bn_(.*)",
+            r"s\1_fuse.bn.\3",
+        ],
         # 't_pool1_subsample' -> 's1_fuse.conv_f2s'
         [
             r"^t_res([0-9]+)_([0-9]+)_branch2c_bn_subsample_(.*)",
@@ -259,7 +264,10 @@ def map_loaded_weights_from_caffe2(caffe2_checkpoint, model):
             else:
                 logger.warn(
                     "!! {}: {} does not match {}: {}".format(
-                        key, c2_blob_shape, converted_key, tuple(model_blob_shape),
+                        key,
+                        c2_blob_shape,
+                        converted_key,
+                        tuple(model_blob_shape),
                     )
                 )
         else:

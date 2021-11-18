@@ -1,8 +1,9 @@
 import torch
+from ride import Configs, RideModule, TopKAccuracyMetric
+from ride.optimizers import SgdOneCycleOptimizer
+
 from datasets import ActionRecognitionDatasets
 from models.slowfast.video_model_builder import SlowFast
-from ride import RideModule, Configs, TopKAccuracyMetric
-from ride.optimizers import SgdOneCycleOptimizer
 
 from .model_loading import map_loaded_weights_from_caffe2
 
@@ -80,14 +81,25 @@ class SlowFastRide(
             strategy="constant",
             description="Target image size.",
         )
+        c.add(
+            name="temporal_window_size",
+            type=int,
+            default=8,
+            strategy="choice",
+            description="Temporal window size for global average pool.",
+        )
         # Detecion hparams not exposed
         return c
 
     def __init__(self, hparams):
         dim_in = 3
-        frames_per_clip = self.hparams.frames_per_clip
-        image_size = self.hparams.image_size
-        self.input_shape = (dim_in, frames_per_clip, image_size, image_size)
+        self.hparams.frames_per_clip = self.hparams.temporal_window_size
+        self.input_shape = (
+            dim_in,
+            self.hparams.temporal_window_size,
+            self.hparams.image_size,
+            self.hparams.image_size,
+        )
 
         SlowFast.__init__(
             self,
@@ -96,8 +108,8 @@ class SlowFastRide(
             slowfast_fusion_conv_channel_ratio=self.hparams.slowfast_fusion_conv_channel_ratio,
             slowfast_fusion_kernel_size=self.hparams.slowfast_fusion_kernel_size,
             resnet_depth=self.hparams.resnet_depth,
-            image_size=image_size,
-            frames_per_clip=frames_per_clip,
+            image_size=self.hparams.image_size,
+            temporal_window_size=self.hparams.temporal_window_size,
             num_classes=self.dataloader.num_classes,  # from ActionRecognitionDatasets
             dropout_rate=self.hparams.dropout_rate,
             head_activation=self.hparams.head_activation,

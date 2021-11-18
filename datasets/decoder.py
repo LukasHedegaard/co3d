@@ -7,10 +7,9 @@ import random
 import numpy as np
 import torch
 import torchvision.io as io
-
 from ride.utils.logging import getLogger
 
-logger = getLogger(__name__, log_once=True)
+logger = getLogger(__name__)
 
 
 def temporal_sampling(frames, start_idx, end_idx, num_samples):
@@ -90,7 +89,13 @@ def get_start_end_idx_centered(video_size, clip_size, clip_idx, num_clips):
 
 
 def pyav_decode_stream(
-    container, start_pts, end_pts, stream, stream_name, buffer_size=0
+    container,
+    start_pts,
+    end_pts,
+    stream,
+    stream_name={"video": 0},
+    buffer_size=0,
+    seek_margin=1024,
 ):
     """
     Decode the video with PyAV decoder.
@@ -109,8 +114,8 @@ def pyav_decode_stream(
     """
     # Seeking in the stream is imprecise. Thus, seek to an ealier PTS by a
     # margin pts.
-    margin = 1024
-    seek_offset = max(start_pts - margin, 0)
+    seek_margin = 1024
+    seek_offset = max(start_pts - seek_margin, 0)
 
     container.seek(seek_offset, any_frame=False, backward=True, stream=stream)
     frames = {}
@@ -330,11 +335,11 @@ def decode(
         frames (tensor): decoded frames from the video.
     """
     # Currently support two decoders: 1) PyAV, and 2) TorchVision.
-    assert clip_idx >= -1, "Not valied clip_idx {}".format(clip_idx)
+    assert clip_idx >= -1, "Not valid clip_idx {}".format(clip_idx)
     try:
         if backend == "pyav":
             frames, fps, decode_all_video = pyav_decode(
-                container, sampling_rate, num_frames, clip_idx, num_clips, target_fps,
+                container, sampling_rate, num_frames, clip_idx, num_clips, target_fps
             )
         elif backend == "torchvision":
             frames, fps, decode_all_video = torchvision_decode(

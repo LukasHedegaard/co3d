@@ -90,7 +90,9 @@ class SubBatchNorm3d(nn.Module):
                 self.bn.running_mean.data,
                 self.bn.running_var.data,
             ) = self._get_aggregated_mean_std(
-                self.split_bn.running_mean, self.split_bn.running_var, self.num_splits,
+                self.split_bn.running_mean,
+                self.split_bn.running_var,
+                self.num_splits,
             )
 
     def forward(self, x):

@@ -1,5 +1,5 @@
 batch_size: 128
-frames_per_clip: 4
+temporal_window_size: 4
 temporal_downsampling: 12
 image_size: 160
 learning_rate: 0.1

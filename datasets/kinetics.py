@@ -8,13 +8,11 @@ from typing import Dict, List, Optional, Tuple
 import av
 import torch
 import torch.utils.data
-from tqdm.contrib.concurrent import process_map
-
-from ride.utils.env import NUM_CPU, CACHE_PATH
+from joblib import Memory
+from ride.utils.env import CACHE_PATH, NUM_CPU
 from ride.utils.io import load_json
 from ride.utils.logging import getLogger
-from joblib import Memory
-
+from tqdm.contrib.concurrent import process_map
 
 from . import decoder as decoder
 from . import video_container as container
@@ -68,15 +66,19 @@ class Kinetics(torch.utils.data.Dataset):
             annotation_path (str): path to the folder containing the split files
             frames_per_clip (int): number of frames in a clip
             step_between_clips (int): number of frames between each clip
-            kinetics_version (str): version of kinetics to use (Options are ["400", "600", "700"])
             split (str, optional): Which split to use (Options are ["train", "val", "test"])
             video_transform (callable, optional): A function/transform that  takes in a TxHxWxC video
                 and returns a transformed version.
+            audio_transform (callable, optional): A function that applies a transformation to the audio input.
+            label_transform (callable, optional): A function that applies a transformation to the labels.
+            global_transform (callable, optional): A function that applies a transformation to the
+                (video, audio, label, video_inds) tuple.
 
         Returns:
             video (Tensor[T, H, W, C]): the `T` video frames
             audio(None): Currently not supported
             label (int): class of the video clip
+            video_ind (int): index of the originating video
         """
         # Only support train, val, and test split.
         assert split in [
@@ -104,6 +106,7 @@ class Kinetics(torch.utils.data.Dataset):
         self.num_spatial_crops = num_spatial_crops
         self.num_retries = num_retries
 
+        logger.info("Loading Kinetics {}".format(self.split))
         (
             self.labels,
             self.file_paths,

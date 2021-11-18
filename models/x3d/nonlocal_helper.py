@@ -72,7 +72,9 @@ class Nonlocal(nn.Module):
         self.conv_out.zero_init = zero_init_final_conv
 
         self.norm = norm_module(
-            num_features=self.dim, eps=self.norm_eps, momentum=self.norm_momentum,
+            num_features=self.dim,
+            eps=self.norm_eps,
+            momentum=self.norm_momentum,
         )
         # Zero initializing the final bn.
         self.norm.transform_final_bn = zero_init_final_norm

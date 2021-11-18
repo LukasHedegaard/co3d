@@ -166,7 +166,7 @@ class SlowFast(nn.Module):
         slowfast_fusion_kernel_size: int,
         resnet_depth: int,
         image_size: int,
-        frames_per_clip: int,
+        temporal_window_size: int,
         num_classes: int,
         dropout_rate: float,
         head_activation: str,
@@ -376,11 +376,11 @@ class SlowFast(nn.Module):
                 num_classes=num_classes,
                 pool_size=[
                     [
-                        frames_per_clip // slowfast_alpha // pool_size[0][0],
+                        temporal_window_size // slowfast_alpha // pool_size[0][0],
                         1,
                         1,
                     ],
-                    [frames_per_clip // pool_size[1][0], 1, 1],
+                    [temporal_window_size // pool_size[1][0], 1, 1],
                 ],
                 resolution=[[DETECTION_ROI_XFORM_RESOLUTION] * 2] * 2,
                 scale_factor=[DETECTION_SPATIAL_SCALE_FACTOR] * 2,
@@ -399,12 +399,12 @@ class SlowFast(nn.Module):
                 if multigrid_short_cycle
                 else [
                     [
-                        frames_per_clip // slowfast_alpha // pool_size[0][0],
+                        temporal_window_size // slowfast_alpha // pool_size[0][0],
                         image_size // 32 // pool_size[0][1],
                         image_size // 32 // pool_size[0][2],
                     ],
                     [
-                        frames_per_clip // pool_size[1][0],
+                        temporal_window_size // pool_size[1][0],
                         image_size // 32 // pool_size[1][1],
                         image_size // 32 // pool_size[1][2],
                     ],
@@ -454,7 +454,7 @@ class ResNet(nn.Module):
         model_arch: str,
         resnet_depth: int,
         image_size: int,
-        frames_per_clip: int,
+        temporal_window_size: int,
         num_classes: int,
         dropout_rate: float,
         head_activation: str,
@@ -608,7 +608,7 @@ class ResNet(nn.Module):
             self.head = head_helper.ResNetRoIHead(
                 dim_in=[width_per_group * 32],
                 num_classes=num_classes,
-                pool_size=[[frames_per_clip // pool_size[0][0], 1, 1]],
+                pool_size=[[temporal_window_size // pool_size[0][0], 1, 1]],
                 resolution=[[DETECTION_ROI_XFORM_RESOLUTION] * 2],
                 scale_factor=[DETECTION_SPATIAL_SCALE_FACTOR],
                 dropout_rate=dropout_rate,
@@ -623,7 +623,7 @@ class ResNet(nn.Module):
                 if multigrid_short_cycle
                 else [
                     [
-                        frames_per_clip // pool_size[0][0],
+                        temporal_window_size // pool_size[0][0],
                         image_size // 32 // pool_size[0][1],
                         image_size // 32 // pool_size[0][2],
                     ]

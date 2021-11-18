@@ -4,8 +4,7 @@ from torchvision.datasets.video_utils import VideoClips
 
 
 class VideoClassificationDataset:
-    """Abstract base class for VideoClassificationDataset
-    """
+    """Abstract base class for VideoClassificationDataset"""
 
     video_clips: VideoClips
 

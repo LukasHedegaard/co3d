@@ -173,11 +173,24 @@ class X3DTransform(nn.Module):
         self._stride_1x1 = stride_1x1
         self._block_idx = block_idx
         self._construct(
-            dim_in, dim_out, stride, dim_inner, num_groups, dilation, norm_module,
+            dim_in,
+            dim_out,
+            stride,
+            dim_inner,
+            num_groups,
+            dilation,
+            norm_module,
         )
 
     def _construct(
-        self, dim_in, dim_out, stride, dim_inner, num_groups, dilation, norm_module,
+        self,
+        dim_in,
+        dim_out,
+        stride,
+        dim_inner,
+        num_groups,
+        dilation,
+        norm_module,
     ):
         (str1x1, str3x3) = (stride, 1) if self._stride_1x1 else (1, stride)
 
@@ -291,11 +304,24 @@ class BottleneckTransform(nn.Module):
         self._bn_mmt = bn_mmt
         self._stride_1x1 = stride_1x1
         self._construct(
-            dim_in, dim_out, stride, dim_inner, num_groups, dilation, norm_module,
+            dim_in,
+            dim_out,
+            stride,
+            dim_inner,
+            num_groups,
+            dilation,
+            norm_module,
         )
 
     def _construct(
-        self, dim_in, dim_out, stride, dim_inner, num_groups, dilation, norm_module,
+        self,
+        dim_in,
+        dim_out,
+        stride,
+        dim_inner,
+        num_groups,
+        dilation,
+        norm_module,
     ):
         (str1x1, str3x3) = (stride, 1) if self._stride_1x1 else (1, stride)
 
