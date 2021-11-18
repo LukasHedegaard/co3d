@@ -13,7 +13,6 @@ do
         --from_hparams_file models/x3d/hparams/$MODEL.yaml \
         --finetune_from_weights models/x3d/weights/x3d_$MODEL.pyth \
         --batch_size 32 \
-        --log_level INFO \
         --forward_frame_delay $FRAME_DELAY \
         --benchmark True \
         --validate \
@@ -30,14 +29,12 @@ do
 
     horovodrun -np 4 python $PROJECT/main.py \
         --id x3d_kinetics400_frame_delay_$MODEL \
-        --results_log_dir $PROJECT \
         --dataset $DATASET \
         --gpus 1 \
         --seed 42 \
         --batch_size 16 \
         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
         --finetune_from_weights $PROJECT/weights/x3d_$MODEL.pyth \
-        --log_level DEBUG \
         --validate \
         --test_ensemble 0 \
         --distributed_backend horovod \

@@ -15,7 +15,6 @@ do
         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
         --finetune_from_weights $PROJECT/weights/SLOWFAST_$MODEL.pkl \
         --test \
-        --log_level DEBUG \
         --gpus $GPUS \
         --logging_backend wandb \
         --image_size 256 \
