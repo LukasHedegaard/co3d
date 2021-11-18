@@ -8,7 +8,7 @@ PROJECT=models/coresnet
 DATASET=ssv2
 GPUS=2
 DISTRIBUTED_BACKEND=ddp
-PRECISION=32
+PRECISION=16
 
 # Run test sequence ######################
 
@@ -36,12 +36,12 @@ python $PROJECT/main.py \
     --gpus $GPUS \
     --from_hparams_file models/coresnet/hparams/slow_8x8_ssv2.yaml \
     --finetune_from_weights models/coresnet/weights/slow_8x8_ssv2.pyth \
-    --batch_size 1 \
+    --batch_size 16 \
     --benchmark True \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
-    --co3d_forward_mode frame \
+    --co3d_forward_mode init_frame \
     --distributed_backend $DISTRIBUTED_BACKEND \
     --test \
   
@@ -53,13 +53,13 @@ python $PROJECT/main.py \
     --gpus $GPUS \
     --from_hparams_file models/coresnet/hparams/slow_8x8_ssv2.yaml \
     --finetune_from_weights models/coresnet/weights/slow_8x8_ssv2.pyth \
-    --batch_size 1 \
+    --batch_size 8 \
     --benchmark True \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --temporal_window_size 64 \
-    --co3d_forward_mode frame \
+    --co3d_forward_mode init_frame \
     --distributed_backend $DISTRIBUTED_BACKEND \
     --test \
 

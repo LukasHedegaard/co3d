@@ -26,7 +26,7 @@ python $PROJECT/main.py \
     --learning_rate 0.01 \
     --train \
     --test \
-    --max_epochs 1 \
+    --max_epochs 2 \
     --distributed_backend $DISTRIBUTED_BACKEND \
     --checkpoint_every_n_steps 2000 \
   

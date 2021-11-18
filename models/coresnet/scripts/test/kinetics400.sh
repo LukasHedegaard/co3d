@@ -6,7 +6,7 @@ fi
 
 PROJECT=models/coresnet
 DATASET=kinetics400
-GPUS=7
+GPUS=2
 DISTRIBUTED_BACKEND=ddp
 PRECISION=16
 
