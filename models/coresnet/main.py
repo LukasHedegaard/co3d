@@ -2,12 +2,11 @@
 from ride import Main  # isort:skip
 
 from ride import Configs, RideModule
-from ride.metrics import MeanAveragePrecisionMetric, MetricSelector, TopKAccuracyMetric
+from ride.metrics import MeanAveragePrecisionMetric, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from datasets.ava import AvaMetric
 from models.common import Co3dBase
 from models.coresnet.modules.coresnet import CoResNet
 
@@ -19,13 +18,8 @@ class CoResNetRide(
     Co3dBase,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
-    MetricSelector(
-        kinetics400=TopKAccuracyMetric(1),
-        charades=MeanAveragePrecisionMetric,
-        ssv2=TopKAccuracyMetric(1, 3, 5),
-        ava=AvaMetric,
-        default_config="ssv2",
-    ),
+    TopKAccuracyMetric(1),
+    MeanAveragePrecisionMetric,
 ):
     @staticmethod
     def configs() -> Configs:

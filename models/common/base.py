@@ -6,7 +6,6 @@ from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
 from ride.utils.utils import name
-from datasets.ava import ava_loss, preprocess_ava_batch
 
 logger = getLogger("co3d")
 
@@ -101,22 +100,12 @@ class Co3dBase(RideMixin):
         if "frame" in self.hparams.co3d_forward_mode:
             self.module.call_mode = "forward_steps"  # default = "forward"
 
-        if self.hparams.dataset == "ava":
-            self.loss = ava_loss(self.loss)
-            self.hparams.enable_detection = True
-
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
         logger.info(f"Training loss: {name(self.loss)}")
 
         # If conducting profiling, ensure that the model has been warmed up
         # so that it doesn't output placeholder values
         if self.hparams.profile_model:
-
-            if self.hparams.enable_detection:
-                # Pass in bounding boxes to RoIHead for AVA dataset.
-                dummy_boxes = [torch.tensor([[11.5200, 25.0880, 176.0000, 250.6240]])]
-                self.module[-1].set_boxes(dummy_boxes)
-
             logger.info("Warming model up")
             self.module(
                 torch.randn(
@@ -135,19 +124,8 @@ class Co3dBase(RideMixin):
                 if hasattr(m, "stride_index"):
                     m.stride_index = 0
 
-    def preprocess_batch(self, batch):
-        """Overloads method in ride.Lifecycle"""
-        if self.hparams.dataset == "ava":
-            batch = preprocess_ava_batch(batch)
-        return batch
-
     def forward(self, x):
         result = None
-
-        if self.hparams.enable_detection and not self.hparams.profile_model:
-            # Pass in bounding boxes to RoIHead for AVA dataset.
-            self.module[-1].set_boxes(x["boxes"])
-            x = x["images"]
 
         if "init" in self.hparams.co3d_forward_mode:
             self.module.clean_state()
@@ -161,11 +139,6 @@ class Co3dBase(RideMixin):
         else:
             result = self.module(x)
 
-        if self.task == "classification":
-            result = result.mean(dim=-1)
-        elif self.task == "detection":
-            result = result.permute(0, 2, 1).reshape(-1, self.num_classes)
-        else:
-            raise ValueError(f"Unknown task {self.task}")
+        result = result.mean(dim=-1)
 
         return result

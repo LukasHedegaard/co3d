@@ -1,8 +1,7 @@
 import numpy as np
 import torch
-from torchmetrics import AveragePrecision, RetrievalMAP
-
 from metrics import mean_calibrated_average_precision
+from torchmetrics import AveragePrecision, RetrievalMAP
 
 
 def frame_level_map_n_cap(all_probs, all_labels):
