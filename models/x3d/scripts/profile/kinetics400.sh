@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT=models/co3d
+PROJECT=models/x3d
 DATASET=kinetics400
 GPUS=1
 
