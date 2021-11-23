@@ -1,6 +1,4 @@
 # Continual 3D Convolutional Neural Networks
-[![Paper](http://img.shields.io/badge/paper-arxiv.2106.00050-B31B1B.svg)](https://arxiv.org/abs/2106.00050)
-[![Framework](https://img.shields.io/badge/Built_to-Ride-643DD9.svg)](https://github.com/LukasHedegaard/ride)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -45,11 +43,6 @@ Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further traini
 
 # Setup
 
-1. Clone the project code
-    ```bash
-    git clone https://github.com/LukasHedegaard/co3d
-    cd co3d
-    ```
 
 1. Create and activate `conda` environent (optional)
     ```bash
@@ -108,8 +101,7 @@ _SlowFast_ [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com
 _Slow_ is the "slow" branch of the SlowFast network [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com/facebookresearch/SlowFast)]
 
 # Usage
-The project code written in PyTorch and uses [Ride](https://github.com/LukasHedegaard/ride) to provide implementations of training, evaluations, and benchmarking methods.
-A plethora of usage options are available, which are best explored in the [Ride docs](https://ride.readthedocs.io) or the command-line help, e.g.:
+A plethora of usage options are available, which are best explored with command-line help for each project, e.g.:
 ```bash
 python models/cox3d/main.py --help 
 ```
@@ -167,13 +159,3 @@ The scripts should be executed from project root.
 | X3D           | [`./models/x3d/scripts/profile/kinetics400.sh`](models/x3d/scripts/profile/kinetics400.sh) | 
 | CoX3D         | [`./models/cox3d/scripts/profile/kinetics400.sh`](models/cox3d/scripts/profile/kinetics400.sh) | 
 
-
-# Citation   
-```
-@article{hedegaard2021continual,
-  title={Continual 3D Convolutional Neural Networks for Real-time Processing of Videos},
-  author={Lukas Hedegaard and Alexandros Iosifidis},
-  journal={preprint, arXiv:2106.00050},
-  year={2021}
-}
-```
