@@ -17,6 +17,8 @@ class MultiCrossEntropyLoss(torch.nn.Module):
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
 
     def forward(self, input, target):
+        target = target.to(dtype=torch.int)
+
         if self.ignore_index is not None:
             notice_index = [
                 i for i in range(target.shape[-1]) if i != self.ignore_index
@@ -55,11 +57,12 @@ class LabelSmoothingCrossEntropy(nn.Module):
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.ignore_classes:
-            select = target != self.ignore_classes[0]
-            for c in self.ignore_classes[1:]:
-                select.logical_and_(target != c)
-            x = x[select]
-            target = target[select]
+            sel = torch.tensor(
+                list(set(range(x.shape[-1])) - set(self.ignore_classes)),
+                device=x.device,
+            )
+            x = x.index_select(-1, sel)
+            target = target.index_select(-1, sel)
 
         logprobs = F.log_softmax(x, dim=-1)
         nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
