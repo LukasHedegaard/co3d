@@ -4,7 +4,7 @@ then
   export $(cat .env | xargs)
 fi
 
-PROJECT=models/coresnet
+PROJECT=models/coslow
 DATASET=ava
 GPUS=1
 PRECISION=16
@@ -16,13 +16,13 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_4x16_ava.yaml \
+    --from_hparams_file models/coslow/hparams/slow_4x16_ava.yaml \
     --batch_size 1 \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode clip \
-    --finetune_from_weights models/coresnet/weights/slow_4x16_ava.pyth \
+    --finetune_from_weights models/coslow/weights/slow_4x16_ava.pyth \
     --test \
 
 
@@ -31,13 +31,13 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_4x16_ava.yaml \
+    --from_hparams_file models/coslow/hparams/slow_4x16_ava.yaml \
     --batch_size 1 \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode init_frame \
-    --finetune_from_weights models/coresnet/weights/slow_4x16_ava.pyth \
+    --finetune_from_weights models/coslow/weights/slow_4x16_ava.pyth \
     --test \
 
 
@@ -46,12 +46,12 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_4x16_ava.yaml \
+    --from_hparams_file models/coslow/hparams/slow_4x16_ava.yaml \
     --batch_size 1 \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode init_frame \
-    --finetune_from_weights models/coresnet/weights/slow_4x16_ava.pyth \
+    --finetune_from_weights models/coslow/weights/slow_4x16_ava.pyth \
     --test \
     --temporal_window_size 64 \

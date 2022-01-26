@@ -4,7 +4,7 @@ then
   export $(cat .env | xargs)
 fi
 
-PROJECT=models/coresnet
+PROJECT=models/coslow
 DATASET=charades
 GPUS=1
 PRECISION=32
@@ -16,14 +16,14 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_charades.yaml \
+    --from_hparams_file models/coslow/hparams/slow_8x8_charades.yaml \
     --batch_size 1 \
     --benchmark True \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --co3d_forward_mode clip \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
+    --finetune_from_weights models/coslow/weights/slow_8x8_charades.pyth \
     --profile_model \
 
 
@@ -32,8 +32,8 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_charades.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
+    --from_hparams_file models/coslow/hparams/slow_8x8_charades.yaml \
+    --finetune_from_weights models/coslow/weights/slow_8x8_charades.pyth \
     --batch_size 1 \
     --benchmark True \
     --logging_backend wandb \
@@ -48,8 +48,8 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_charades.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_charades.pyth \
+    --from_hparams_file models/coslow/hparams/slow_8x8_charades.yaml \
+    --finetune_from_weights models/coslow/weights/slow_8x8_charades.pyth \
     --batch_size 1 \
     --benchmark True \
     --logging_backend wandb \

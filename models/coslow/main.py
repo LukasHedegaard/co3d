@@ -7,9 +7,7 @@ from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from datasets.ava import AvaMetric
-from models.common import Co3dBase
-from models.coresnet.modules.coresnet import CoResNet
+from models.common import Co3dBase, CoResNet
 
 logger = getLogger("CoResNet")
 
@@ -22,9 +20,7 @@ class CoResNetRide(
     MetricSelector(
         kinetics400=TopKAccuracyMetric(1),
         charades=MeanAveragePrecisionMetric,
-        ssv2=TopKAccuracyMetric(1, 3, 5),
-        ava=AvaMetric,
-        default_config="ssv2",
+        default_config="kinetics400",
     ),
 ):
     @staticmethod

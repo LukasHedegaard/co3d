@@ -4,7 +4,7 @@ then
   export $(cat .env | xargs)
 fi
 
-PROJECT=models/coresnet
+PROJECT=models/coslow
 DATASET=kinetics400
 PRECISION=32
 
@@ -16,8 +16,8 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus 1 \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_kinetics.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_kinetics.pyth \
+    --from_hparams_file models/coslow/hparams/slow_8x8_kinetics.yaml \
+    --finetune_from_weights models/coslow/weights/slow_8x8_kinetics.pyth \
     --co3d_forward_mode init_frame \
     --batch_size 1 \
     --benchmark True \
@@ -32,8 +32,8 @@ python $PROJECT/main.py \
     --dataset $DATASET \
     --seed 42 \
     --gpus 1 \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_kinetics.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_kinetics.pyth \
+    --from_hparams_file models/coslow/hparams/slow_8x8_kinetics.yaml \
+    --finetune_from_weights models/coslow/weights/slow_8x8_kinetics.pyth \
     --co3d_forward_mode init_frame \
     --batch_size 1 \
     --logging_backend wandb \
