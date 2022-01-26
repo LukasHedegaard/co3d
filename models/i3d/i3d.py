@@ -78,7 +78,7 @@ class I3D(
             model_arch="i3d",
             resnet_depth=self.hparams.resnet_depth,
             image_size=image_size,
-            frames_per_clip=self.hparams.temporal_window_size,
+            temporal_window_size=self.hparams.temporal_window_size,
             num_classes=self.dataloader.num_classes,  # from ActionRecognitionDatasets
             dropout_rate=self.hparams.dropout_rate,
             head_activation=self.hparams.head_activation,
