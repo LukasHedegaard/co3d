@@ -79,22 +79,6 @@ class CoSlowRide(
             strategy="choice",
             description="If true, initialize the gamma of the final BN of each block to zero.",
         )
-        c.add(
-            name="enable_detection",
-            type=int,
-            default=0,
-            strategy="choice",
-            choices=[0, 1],
-            description="Whether to enable detection head.",
-        )
-        c.add(
-            name="align_detection",
-            type=int,
-            default=0,
-            strategy="choice",
-            choices=[0, 1],
-            description="Whether to utilise alignment in detection head.",
-        )
         return c
 
     def __init__(self, hparams):

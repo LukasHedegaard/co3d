@@ -1,11 +1,13 @@
 from operator import attrgetter
 
 import torch
-from continual import CoModule
+from continual import CoModule, TensorPlaceholder
 from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
 from ride.utils.utils import name
+from losses.ce import MultiCrossEntropyLoss
+
 
 from datasets.ava import ava_loss, preprocess_ava_batch
 
@@ -35,7 +37,7 @@ class Co3dBase(RideMixin):
             name="co3d_forward_mode",
             type=str,
             default="init_frame",
-            choices=["clip", "frame", "init_frame", "init_clip", "clip_init_frame"],
+            choices=["clip", "frame", "init_frame"],
             strategy="choice",
             description="Whether to compute clip or frame during forward. If 'clip_init_frame', the network is initialised with a clip and then frame forwards are applied.",
         )
@@ -66,6 +68,22 @@ class Co3dBase(RideMixin):
             strategy="choice",
             description="Temporal window size for global average pool.",
         )
+        c.add(
+            name="enable_detection",
+            type=int,
+            default=0,
+            strategy="choice",
+            choices=[0, 1],
+            description="Whether to enable detection head.",
+        )
+        c.add(
+            name="align_detection",
+            type=int,
+            default=0,
+            strategy="choice",
+            choices=[0, 1],
+            description="Whether to utilise alignment in detection head.",
+        )
         return c
 
     def __init__(self, hparams: AttributeDict, *args, **kwargs):
@@ -83,6 +101,12 @@ class Co3dBase(RideMixin):
             )
             self.hparams.frames_per_clip = (
                 num_init_frames
+                + self.hparams.co3d_num_forward_frames
+                + self.hparams.co3d_forward_prediction_delay
+            )
+        elif "clip" in self.hparams.co3d_forward_mode:
+            self.hparams.frames_per_clip = (
+                (self.module.receptive_field - 2 * self.module.padding - 1)
                 + self.hparams.co3d_num_forward_frames
                 + self.hparams.co3d_forward_prediction_delay
             )
@@ -105,6 +129,10 @@ class Co3dBase(RideMixin):
         if self.hparams.dataset == "ava":
             self.loss = ava_loss(self.loss)
             self.hparams.enable_detection = True
+            self.task
+        elif self.hparams.dataset == "tvseries":
+            self.loss = MultiCrossEntropyLoss(ignore_index=0)
+            self.hparams.mean_average_precision_skip_classes = [0]
 
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
         logger.info(f"Training loss: {name(self.loss)}")
@@ -140,6 +168,17 @@ class Co3dBase(RideMixin):
         """Overloads method in ride.Lifecycle"""
         if self.hparams.dataset == "ava":
             batch = preprocess_ava_batch(batch)
+        if self.hparams.dataset == "tvseries":
+            y = batch[1]
+
+            # Remove labels for initialisation frames
+            y = y[:, -self.hparams.co3d_num_forward_frames :]
+
+            # Collapse batch and temporal dimension
+            y = y.reshape(y.shape[0] * y.shape[1], -1)
+
+            batch[1] = y
+
         return batch
 
     def forward(self, x):
@@ -156,7 +195,7 @@ class Co3dBase(RideMixin):
                 self.module.receptive_field - self.module.padding - 1,
                 self.hparams.co3d_forward_frame_delay - 1,
             )
-            self.module(x[:, :, :num_init_frames])  # = forward_steps don't save
+            assert isinstance(self.module(x[:, :, :num_init_frames]), TensorPlaceholder)
 
             result = self.module(x[:, :, num_init_frames:])
         else:
