@@ -19,39 +19,79 @@ from datasets.decoder import pyav_decode_stream
 logger = getLogger(__name__)
 cache = Memory(CACHE_PATH, verbose=1).cache
 
-CLASSES = [
-    "None",
-    "Pick something up",
-    "Point",
-    "Drink",
-    "Stand up",
-    "Run",
-    "Sit down",
-    "Read",
-    "Smoke",
-    "Drive car",
-    "Open door",
-    "Give something",
-    "Use computer",
-    "Write",
-    "Close door",
-    "Go down stairway",
-    "Go up stairway",
-    "Throw something",
-    "Get in/out of car",
-    "Hang up phone",
-    "Eat",
-    "Answer phone",
-    "Clap",
-    "Dress up",
-    "Undress",
-    "Kiss",
-    "Fall/trip",
-    "Wave",
-    "Pour",
-    "Punch",
-    "Fire weapon",
-]
+
+VIDEO_LENGTHS = {  # at 25 fps
+    "24_ep1": 61450,
+    "24_ep2": 61925,
+    "24_ep3": 63425,
+    "24_ep4": 62325,
+    "Breaking_Bad_ep1": 83600,
+    "Breaking_Bad_ep2": 69375,
+    "Breaking_Bad_ep3": 69350,
+    "How_I_Met_Your_Mother_ep1": 31740,
+    "How_I_Met_Your_Mother_ep2": 31665,
+    "How_I_Met_Your_Mother_ep3": 30700,
+    "How_I_Met_Your_Mother_ep4": 31675,
+    "How_I_Met_Your_Mother_ep5": 31670,
+    "How_I_Met_Your_Mother_ep6": 31800,
+    "How_I_Met_Your_Mother_ep7": 31700,
+    "How_I_Met_Your_Mother_ep8": 31700,
+    "Mad_Men_ep1": 72950,
+    "Mad_Men_ep2": 70525,
+    "Mad_Men_ep3": 66300,
+    "Modern_Family_ep1": 33075,
+    "Modern_Family_ep2": 31050,
+    "Modern_Family_ep3": 30550,
+    "Modern_Family_ep4": 31175,
+    "Modern_Family_ep5": 30200,
+    "Modern_Family_ep6": 29950,
+    "Sons_of_Anarchy_ep1": 82275,
+    "Sons_of_Anarchy_ep2": 66750,
+    "Sons_of_Anarchy_ep3": 68425,
+}
+
+CLASS2IDX = {
+    c: i
+    for i, c in enumerate(
+        [
+            "None",
+            "Answer phone",
+            "Clap",
+            "Close door",
+            "Dress up",
+            "Drink",
+            "Drive car",
+            "Eat",
+            "Fall/trip",
+            "Fire weapon",
+            "Get in/out of car",
+            "Give something",
+            "Go down stairway",
+            "Go up stairway",
+            "Hang up phone",
+            "Kiss",
+            "Open door",
+            "Pick something up",
+            "Point",
+            "Pour",
+            "Punch",
+            "Read",
+            "Run",
+            "Sit down",
+            "Smoke",
+            "Stand up",
+            "Throw something",
+            "Undress",
+            "Use computer",
+            "Wave",
+            "Write",
+        ]
+    )
+}
+
+CLASSES = list(CLASS2IDX.keys())
+
+NUM_CLASSES = len(CLASSES)  # index 0 is the "None-class"
 
 
 class TvSeries(torch.utils.data.Dataset):
@@ -74,7 +114,7 @@ class TvSeries(torch.utils.data.Dataset):
         num_retries=10,
         num_spatial_crops=1,
         skip_short_videos=True,
-        skip_clips_with_no_actions=True,
+        skip_clips_with_no_actions_from_index=-12,  # should be same as co3d_num_forward_frames
         *args,
         **kwargs,
     ):
@@ -110,11 +150,9 @@ class TvSeries(torch.utils.data.Dataset):
         assert split in [
             "train",
             "val",
-            "validate",
             "test",
         ], "Split '{}' not supported for TV-Series".format(split)
         self.split = split
-        used_ds_split = {"train": "val", "val": "test", "test": "test"}[self.split]
         self.data_path = Path(root)
         assert self.data_path.is_dir()
         self.frames_per_clip = frames_per_clip
@@ -130,20 +168,20 @@ class TvSeries(torch.utils.data.Dataset):
         self.num_spatial_crops = num_spatial_crops
         self.num_retries = num_retries
 
-        prepare_labels(used_ds_split, root, annotation_path, self.target_fps)
+        annotations = prepare_labels(self.split, root, annotation_path, self.target_fps)
 
-        annotation_file = (
-            Path(annotation_path) / f"{used_ds_split}_{self.target_fps}fps.pickle"
-        )
-        assert annotation_file.exists()
+        # annotation_file = (
+        #     Path(annotation_path) / f"{self.split}_{self.target_fps}fps.pickle"
+        # )
+        # assert annotation_file.exists()
 
-        with open(annotation_file, "rb") as f:
-            annotations = pickle.load(f)
+        # with open(annotation_file, "rb") as f:
+        #     annotations = pickle.load(f)
 
         # Validate annotations file contents
-        test_key = next(iter(annotations))
-        test_value = annotations[test_key]
-        assert type(test_value) == list
+        # test_key = next(iter(annotations))
+        # test_value = annotations[test_key]
+        # assert type(test_value) == list
 
         # Used for multi-crop testing
         num_clips = num_spatial_crops if self.split in ["test"] else 1
@@ -163,8 +201,11 @@ class TvSeries(torch.utils.data.Dataset):
             ):
                 clip_targets = vid_target[start_idx:end_idx]
 
-                if skip_clips_with_no_actions:
-                    if all([ct == 0 for ct in clip_targets]):
+                if skip_clips_with_no_actions_from_index:
+                    if (
+                        clip_targets[skip_clips_with_no_actions_from_index:, 1:].sum()
+                        == 0
+                    ):
                         continue
 
                 for _ in range(num_clips):
@@ -207,7 +248,7 @@ class TvSeries(torch.utils.data.Dataset):
                 "Failed to fetch video after {} retries.".format(self.num_retries)
             )
 
-        labels = torch.tensor(labels)
+        labels = torch.tensor(labels).permute(0, 1)
         assert len(labels) == len(video)
 
         audio = None
@@ -313,55 +354,72 @@ def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps:
 
     logger.info(f"Preparing TV-Series labels for {split} split")
 
-    label_dict = dict()
+    # label_dict = dict()
 
     # Iterate through annotations and update
-    class2idx = {c: i for i, c in enumerate(CLASSES)}
+    # class2idx = {c: i for i, c in enumerate(CLASSES)}
 
-    annot_path = Path(annotation_path) / f"{split}.txt"
-    df = pd.read_csv(annot_path, sep="\t", header=None)
-    df.columns = [
-        "video_id",  # series name and episode number (Name_Of_The_Series_epNUMBER)
-        "class",  # class name (same as in classes.txt)
-        "start_sec",  # start of the action (in seconds)
-        "end_sec",  # end of the action (in seconds)
-        "single_person",  # only one person visible? (yes/no (1/0))
-        "atypical",  # atypical action instance (the person does something that is unusual for this action)? (yes/no)
-        "shotcut",  # shotcut during action? (yes/no)
-        "moving_cam",  # moving camera during action? (yes/no)
-        "small_subject",  # person is very small or in background? (yes/no)
-        "front_view",  # action is recorded from the front? (yes/no)
-        "side_view",  # action is recorded from the side? (yes/no)
-        "unusual_view",  # action is recorded from an unusual viewpoint? (yes/no)
-        "occluded",  # action is (partly) spatially occluded (by object/person/...)? (yes/no)
-        "truncated",  # action is spatially truncated (by frame border)? (yes/no)
-        "no_beginning",  # beginning of the action is missing? (yes/no)
-        "no_end",  # end of the action is missing? (yes/no)
-        "comments",  # comments concerning the content of the action or the degree of occlusion and truncation (optional)
-    ]
+    annot_path = Path(annotation_path) / f"GT-{split}.txt"
+    # df = pd.read_csv(annot_path, sep="\t", header=None)
+    # df.columns = [
+    #     "video_id",  # series name and episode number (Name_Of_The_Series_epNUMBER)
+    #     "class",  # class name (same as in classes.txt)
+    #     "start_sec",  # start of the action (in seconds)
+    #     "end_sec",  # end of the action (in seconds)
+    #     "single_person",  # only one person visible? (yes/no (1/0))
+    #     "atypical",  # atypical action instance (the person does something that is unusual for this action)? (yes/no)
+    #     "shotcut",  # shotcut during action? (yes/no)
+    #     "moving_cam",  # moving camera during action? (yes/no)
+    #     "small_subject",  # person is very small or in background? (yes/no)
+    #     "front_view",  # action is recorded from the front? (yes/no)
+    #     "side_view",  # action is recorded from the side? (yes/no)
+    #     "unusual_view",  # action is recorded from an unusual viewpoint? (yes/no)
+    #     "occluded",  # action is (partly) spatially occluded (by object/person/...)? (yes/no)
+    #     "truncated",  # action is spatially truncated (by frame border)? (yes/no)
+    #     "no_beginning",  # beginning of the action is missing? (yes/no)
+    #     "no_end",  # end of the action is missing? (yes/no)
+    #     "comments",  # comments concerning the content of the action or the degree of occlusion and truncation (optional)
+    # ]
+    # for _, row in df.iterrows():
+    #     video_id = row["video_id"]
+
+    #     if video_id not in label_dict:
+    #         # Parse video_length and prefill with `0`-actions
+    #         video_path = Path(data_path) / f"{video_id}.mkv"
+    #         lbls = get_default_labels(video_path, target_fps)
+    #         if lbls is None:
+    #             logger.error(f"Skipping unavailable video {str(video_path)}")
+    #             continue
+
+    #         label_dict[video_id] = lbls
+
+    #     class_index = class2idx[row["class"]]
+    #     start = round(float(row["start_sec"]) * target_fps)
+    #     stop = min(
+    #         round(float(row["end_sec"]) * target_fps),
+    #         len(label_dict[video_id]),
+    #     )
+
+    #     label_dict[video_id][start:stop] = [class_index for _ in range(stop - start)]
+    df = pd.read_table(str(annot_path))
+
+    # Output format: multi-hot encoding for each time-step
+
+    sec2idx = 25 / target_fps  # videos were sampled at 25 fps
+
+    anno = {
+        k: np.zeros((round(length / sec2idx), NUM_CLASSES), dtype=np.bool)
+        for k, length in VIDEO_LENGTHS.items()
+    }
+
     for _, row in df.iterrows():
-        video_id = row["video_id"]
+        class_index = CLASS2IDX[row[1]]
+        start_idx = round(row[2] * sec2idx)
+        end_idx = round(row[3] * sec2idx)
+        anno[row[0]][start_idx:end_idx, class_index] = 1
 
-        if video_id not in label_dict:
-            # Parse video_length and prefill with `0`-actions
-            video_path = Path(data_path) / f"{video_id}.mkv"
-            lbls = get_default_labels(video_path, target_fps)
-            if lbls is None:
-                logger.error(f"Skipping unavailable video {str(video_path)}")
-                continue
+    for a in anno.values():
+        a[a.sum(1) == 0, 0] = 1
+        a = a.transpose(1, 0)  # T, C -> C, T
 
-            label_dict[video_id] = lbls
-
-        class_index = class2idx[row["class"]]
-        start = round(float(row["start_sec"]) * target_fps)
-        stop = min(
-            round(float(row["end_sec"]) * target_fps),
-            len(label_dict[video_id]),
-        )
-
-        label_dict[video_id][start:stop] = [class_index for _ in range(stop - start)]
-
-    # Save annotatio-data
-    with open(parsed_annotation_path, "wb") as file:
-        logger.info(f"Saving parsed annotations to {parsed_annotation_path}")
-        pickle.dump(label_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
+    return anno
