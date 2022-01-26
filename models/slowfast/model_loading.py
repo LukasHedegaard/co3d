@@ -186,8 +186,8 @@ def c2_normal_to_sub_bn(key, model_keys):
         new_key = key.replace("bn.running_", "bn.split_bn.running_")
         if new_key in model_keys:
             return new_key
-    else:
-        return key
+
+    return key
 
 
 def inflate_weight(state_dict_2d, state_dict_3d):
@@ -223,12 +223,17 @@ def inflate_weight(state_dict_2d, state_dict_3d):
     return state_dict_inflated
 
 
-def map_loaded_weights_from_caffe2(caffe2_checkpoint, model):
+def map_loaded_weights_from_caffe2(
+    caffe2_checkpoint, model, extra_name_convert_fn=lambda x: x
+):
     state_dict = OrderedDict()
     name_convert_func = get_name_convert_func()
     for key in caffe2_checkpoint["blobs"].keys():
         converted_key = name_convert_func(key)
         converted_key = c2_normal_to_sub_bn(converted_key, model.state_dict())
+        if converted_key is None:
+            print(f"Got None from {key}")
+        converted_key = extra_name_convert_fn(converted_key)
         if converted_key in model.state_dict():
             c2_blob_shape = caffe2_checkpoint["blobs"][key].shape
             model_blob_shape = model.state_dict()[converted_key].shape
@@ -271,7 +276,7 @@ def map_loaded_weights_from_caffe2(caffe2_checkpoint, model):
                     )
                 )
         else:
-            if not any(prefix in key for prefix in ["momentum", "lr", "model_iter"]):
+            if not any(s in key for s in ["momentum", "lr", "model_iter"]):
                 logger.warn(
                     "!! {}: can not be converted, got {}".format(key, converted_key)
                 )
