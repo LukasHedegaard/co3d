@@ -12,7 +12,7 @@ from models.common import Co3dBase, CoResNet
 logger = getLogger("CoResNet")
 
 
-class CoResNetRide(
+class CoSlowRide(
     RideModule,
     Co3dBase,
     ActionRecognitionDatasets,
@@ -145,4 +145,4 @@ class CoResNetRide(
 
 
 if __name__ == "__main__":
-    Main(CoResNetRide).argparse()
+    Main(CoSlowRide).argparse()
