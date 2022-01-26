@@ -9,7 +9,7 @@ from ride.utils.logging import getLogger
 from datasets import ActionRecognitionDatasets
 from models.common import Co3dBase, CoResNet
 
-logger = getLogger("CoResNet")
+logger = getLogger("CoSlow")
 
 
 class CoSlowRide(
@@ -26,14 +26,6 @@ class CoSlowRide(
     @staticmethod
     def configs() -> Configs:
         c = Configs()
-        c.add(
-            name="resnet_architecture",
-            type=str,
-            default="slow",
-            strategy="constant",
-            choices=["slow", "i3d"],
-            description="Architecture of ResNet.",
-        )
         c.add(
             name="resnet_depth",
             type=int,
@@ -107,7 +99,7 @@ class CoSlowRide(
 
     def __init__(self, hparams):
         self.module = CoResNet(
-            arch=self.hparams.resnet_architecture,
+            arch="slow",
             dim_in=self.dim_in,
             image_size=self.hparams.image_size,
             temporal_window_size=self.hparams.temporal_window_size,
