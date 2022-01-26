@@ -6,56 +6,38 @@ fi
 
 PROJECT=models/coresnet
 DATASET=kinetics400
-GPUS=1
-PRECISION=16
+PRECISION=32
 
 # Run test sequence ######################
 
-python $PROJECT/main.py \
-    --id CoSlow_kin_clip \
-    --dataset $DATASET \
-    --seed 42 \
-    --gpus $GPUS \
-    --from_hparams_file models/coresnet/hparams/slow_8x8_kinetics.yaml \
-    --finetune_from_weights models/coresnet/weights/slow_8x8_kinetics.pyth \
-    --batch_size 8 \
-    --benchmark True \
-    --test \
-    --logging_backend wandb \
-    --num_workers 4 \
-    --precision $PRECISION \
-    --co3d_forward_mode clip \
-
 
 python $PROJECT/main.py \
-    --id CoSlow_kin_frames_26 \
+    --id CoSlow_kinetics_frames_8 \
     --dataset $DATASET \
     --seed 42 \
-    --gpus $GPUS \
+    --gpus 1 \
     --from_hparams_file models/coresnet/hparams/slow_8x8_kinetics.yaml \
     --finetune_from_weights models/coresnet/weights/slow_8x8_kinetics.pyth \
-    --batch_size 8 \
-    --benchmark True \
-    --test \
-    --logging_backend wandb \
-    --num_workers 4 \
-    --precision $PRECISION \
     --co3d_forward_mode init_frame \
-  
+    --batch_size 1 \
+    --benchmark True \
+    --logging_backend wandb \
+    --num_workers 4 \
+    --precision $PRECISION \
+    --test \
+
 
 python $PROJECT/main.py \
-    --id CoSlow_kin_frames_64 \
+    --id CoSlow_kinetics_frames_64 \
     --dataset $DATASET \
     --seed 42 \
-    --gpus $GPUS \
+    --gpus 1 \
     --from_hparams_file models/coresnet/hparams/slow_8x8_kinetics.yaml \
     --finetune_from_weights models/coresnet/weights/slow_8x8_kinetics.pyth \
-    --batch_size 8 \
-    --benchmark True \
-    --test \
+    --co3d_forward_mode init_frame \
+    --batch_size 1 \
     --logging_backend wandb \
     --num_workers 4 \
     --precision $PRECISION \
     --temporal_window_size 64 \
-    --co3d_forward_mode init_frame \
-
+    --test \
