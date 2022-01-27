@@ -1,43 +1,74 @@
 #!/bin/bash
 
-# NB: For GPU-based devices, the largest bacth size possible will result in the highest throuhgput.
+if [ ! -f .env ]
+then
+  export $(cat .env | xargs)
+fi
 
-PROJECT=models/cox3d
+
+MODEL="cox3d"
 DATASET=kinetics400
 BATCH_SIZE=64
+GPUS=1 
+LOGGING_BACKEND="wandb"
 
-GPUS="1" 
-for MODEL in s m l
+for SIZE in s m
 do
-    echo "========================== $MODEL =========================="
+    echo "========================== ${SIZE} =========================="
 
-    CUDA_VISIBLE_DEVICES=0 \
-    python $PROJECT/main.py \
-        --id CoX3D_$(echo $MODEL)_profile_kinetics400 \
+    python models/cox3d/main.py \
+        --id "${MODEL}_${SIZE}_profile_${DATASET}" \
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
         --batch_size $BATCH_SIZE \
-        --from_hparams_file models/x3d/hparams/$MODEL.yaml \
+        --from_hparams_file models/x3d/hparams/$SIZE.yaml \
         --profile_model \
-        --logging_backend tensorboard \
+        --logging_backend $LOGGING_BACKEND \
         --co3d_forward_mode frame \
-        --co3d_temporal_fill zeros \
 
-    echo "========================== $MODEL 64 =========================="
+    echo "========================== ${SIZE} 64 =========================="
 
-    CUDA_VISIBLE_DEVICES=0 \
     python $PROJECT/main.py \
-        --id CoX3D_$(echo $MODEL)_64_profile_kinetics400 \
+        --id "${MODEL}_${SIZE}_64_profile_${DATASET}" \
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
         --batch_size $BATCH_SIZE \
-        --from_hparams_file models/x3d/hparams/$MODEL.yaml \
+        --from_hparams_file models/x3d/hparams/$SIZE.yaml \
         --profile_model \
-        --logging_backend tensorboard \
+        --logging_backend $LOGGING_BACKEND \
         --co3d_forward_mode frame \
         --temporal_window_size 64 \
-        --co3d_temporal_fill zeros \
 
 done
+
+SIZE=l
+BATCH_SIZE=32
+
+echo "========================== ${SIZE} =========================="
+
+python models/cox3d/main.py \
+    --id "${MODEL}_${SIZE}_profile_${DATASET}" \
+    --dataset $DATASET \
+    --gpus $GPUS \
+    --seed 123 \
+    --batch_size $BATCH_SIZE \
+    --from_hparams_file models/x3d/hparams/$SIZE.yaml \
+    --profile_model \
+    --logging_backend $LOGGING_BACKEND \
+    --co3d_forward_mode frame \
+
+echo "========================== ${SIZE} 64 =========================="
+
+python $PROJECT/main.py \
+    --id "${MODEL}_${SIZE}_64_profile_${DATASET}" \
+    --dataset $DATASET \
+    --gpus $GPUS \
+    --seed 123 \
+    --batch_size $BATCH_SIZE \
+    --from_hparams_file models/x3d/hparams/$SIZE.yaml \
+    --profile_model \
+    --logging_backend $LOGGING_BACKEND \
+    --co3d_forward_mode frame \
+    --temporal_window_size 64 \

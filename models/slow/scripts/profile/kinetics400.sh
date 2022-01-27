@@ -1,38 +1,23 @@
 #!/bin/bash
 
-PROJECT=models/slow
-DATASET=kinetics400
+if [ ! -f .env ]
+then
+  export $(cat .env | xargs)
+fi
 
-# CPU
-python $PROJECT/main.py \
-    --id slow_profile_kinetics400 \
-    --from_hparams_file $PROJECT/hparams/slow.yaml \
+MODEL="slow"
+DATASET="kinetics400"
+BATCH_SIZE=8
+logging_backend="wandb"
+GPUS=1
+
+python models/slow/main.py \
+    --id "${MODEL}_profile_${DATASET}" \
+    --from_hparams_file $PROJECT/hparams/slow_8x8.yaml \
     --dataset $DATASET \
     --seed 123 \
-    --batch_size 1 \
     --profile_model \
-    --gpus 0 \
-
-# GPU
-# CUDA_VISIBLE_DEVICES=0 \
-# python $PROJECT/main.py \
-#     --id slow_profile_kinetics400 \
-#     --dataset $DATASET \
-#     --from_hparams_file $PROJECT/hparams/slow.yaml \
-#     --seed 123 \
-#     --batch_size 16 \
-#     --profile_model \
-#     --gpus 1 \
-#     --precision 16 \
-
-# XAVIER
-# python $PROJECT/main.py \
-#     --id slow_profile_kinetics400 \
-#     --dataset $DATASET \
-#     --from_hparams_file $PROJECT/hparams/slow.yaml \
-#     --seed 123 \
-#     --batch_size 32 \
-#     --profile_model \
-#     --gpus 1 \
-#     --precision 16 \
+    --gpus $GPUS \
+    --batch_size $BATCH_SIZE \
+    --logging_backend $LOGGING_BACKEND \
 

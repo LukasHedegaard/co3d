@@ -1,37 +1,34 @@
 #!/bin/bash
 
-PROJECT=models/r2plus1d
-DATASET=kinetics400
+if [ ! -f .env ]
+then
+  export $(cat .env | xargs)
+fi
 
-# CPU
-python $PROJECT/main.py \
-    --id r2plus1d_profile_kinetics400 \
+MODEL="r2plus1d"
+DATASET="kinetics400"
+DEVICE="RTX2080Ti"
+GPUS=1
+LOGGING_BACKEND="wandb"
+
+
+python models/r2plus1d/main.py \
+    --id "${MODEL}_8_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --seed 123 \
-    --batch_size 1 \
+    --batch_size 32 \
     --profile_model \
-    --gpus 0 \
+    --gpus $GPUS \
     --temporal_window_size 8 \
+    --logging_backend $LOGGING_BACKEND \
 
-# GPU
-# CUDA_VISIBLE_DEVICES=0 \
-# python $PROJECT/main.py \
-#     --id r2plus1d_profile_kinetics400 \
-#     --dataset $DATASET \
-#     --seed 123 \
-#     --batch_size 16 \
-#     --profile_model \
-#     --gpus 1 \
-#     --temporal_window_size 8 \
 
-# XAVIER
-# python $PROJECT/main.py \
-#     --id r2plus1d_profile_kinetics400 \
-#     --dataset $DATASET \
-#     --from_hparams_file $PROJECT/hparams/i3d.yaml \
-#     --seed 123 \
-#     --batch_size 32 \
-#     --profile_model \
-#     --temporal_window_size 8 \
-#     --gpus 1 \
-#     --precision 16 \
+python models/r2plus1d/main.py \
+    --id "${MODEL}_16_profile_${DATASET}_${DEVICE}" \
+    --dataset $DATASET \
+    --seed 123 \
+    --batch_size 32 \
+    --profile_model \
+    --gpus $GPUS \
+    --temporal_window_size 16 \
+    --logging_backend $LOGGING_BACKEND \
