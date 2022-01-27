@@ -1,4 +1,5 @@
 from operator import attrgetter
+from typing import Sequence
 
 import torch
 from continual import CoModule, TensorPlaceholder
@@ -6,10 +7,9 @@ from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
 from ride.utils.utils import name
-from losses.ce import MultiCrossEntropyLoss
-
 
 from datasets.ava import ava_loss, preprocess_ava_batch
+from losses.ce import MultiCrossEntropyLoss
 
 logger = getLogger("co3d")
 
@@ -139,30 +139,22 @@ class Co3dBase(RideMixin):
 
         # If conducting profiling, ensure that the model has been warmed up
         # so that it doesn't output placeholder values
-        if self.hparams.profile_model:
+        if self.hparams.profile_model and self.hparams.enable_detection:
+            # Pass in bounding boxes to RoIHead for AVA dataset.
+            dummy_boxes = [torch.tensor([[11.5200, 25.0880, 176.0000, 250.6240]])]
+            self.module[-1].set_boxes(dummy_boxes)
 
-            if self.hparams.enable_detection:
-                # Pass in bounding boxes to RoIHead for AVA dataset.
-                dummy_boxes = [torch.tensor([[11.5200, 25.0880, 176.0000, 250.6240]])]
-                self.module[-1].set_boxes(dummy_boxes)
-
-            logger.info("Warming model up")
-            self.module(
-                torch.randn(
-                    (
-                        self.hparams.batch_size,
-                        self.dim_in,
-                        self.module.receptive_field,
-                        self.hparams.image_size,
-                        self.hparams.image_size,
-                    )
-                )
-            )
-            for m in self.module.modules():
-                if hasattr(m, "state_index"):
-                    m.state_index = 0
-                if hasattr(m, "stride_index"):
-                    m.stride_index = 0
+    def warm_up(self, data_shape: Sequence[int] = None):
+        data_shape = data_shape or (self.hparams.batch_size, *self.module.input_shape)
+        self.module.clean_state()
+        prevously_training = self.module.training
+        self.module.eval()
+        with torch.no_grad():
+            zeros = torch.zeros(data_shape, dtype=torch.float)
+            for _ in range(self.module.receptive_field - self.module.padding - 1):
+                self.module(zeros)
+        if prevously_training:
+            self.module.train()
 
     def preprocess_batch(self, batch):
         """Overloads method in ride.Lifecycle"""
