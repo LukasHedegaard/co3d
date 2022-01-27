@@ -30,7 +30,7 @@ python models/coi3d/main.py \
 
 
 python models/coi3d/main.py \
-    --id "${MODEL}_profile_${DATASET}_${DEVICE}" \
+    --id "${MODEL}_64_profile_${DATASET}_${DEVICE}" \
     --dataset kinetics400 \
     --gpus $GPUS \
     --seed 123 \
@@ -61,7 +61,7 @@ python models/coslow/main.py \
 
 
 python models/coslow/main.py \
-    --id "${MODEL}_profile_${DATASET}_${DEVICE}" \
+    --id "${MODEL}_64_profile_${DATASET}_${DEVICE}" \
     --dataset kinetics400 \
     --gpus $GPUS \
     --seed 123 \
