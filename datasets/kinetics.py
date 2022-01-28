@@ -5,7 +5,10 @@ from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import av
+try:
+    import av
+except Exception:
+    pass
 import torch
 import torch.utils.data
 from joblib import Memory

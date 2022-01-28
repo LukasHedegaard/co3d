@@ -5,7 +5,10 @@ from math import inf
 from pathlib import Path
 from typing import Optional
 
-import av
+try:
+    import av
+except Exception:
+    pass
 import numpy as np
 import pandas as pd
 import torch

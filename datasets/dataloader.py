@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import torch
-from pytorchvideo.transforms import RandAugment
+# from pytorchvideo.transforms import RandAugment
 from ride import Configs, RideClassificationDataset
 from ride.utils.env import DATASETS_PATH, NUM_CPU
 from ride.utils.logging import getLogger
@@ -394,16 +394,16 @@ def train_val_test(
         and train_scale_pix_min > train_crop_pix
     )
 
-    swap_axes = partial(torch.swapaxes, axis0=0, axis1=1)
+    # swap_axes = partial(torch.swapaxes, axis0=0, axis1=1)
     train_transforms = Compose(
         [
             ToTensorVideo(),
             RandomShortSideScaleJitterVideo(
                 min_size=train_scale_pix_min, max_size=train_scale_pix_max
             ),
-            swap_axes,  # (C, T, H, W) -> (T, C, H, W)
-            RandAugment(rand_augment_magnitude, rand_augment_num_layers),
-            swap_axes,  # (T, C, H, W) -> (C, T, H, W)
+            # swap_axes,  # (C, T, H, W) -> (T, C, H, W)
+            # RandAugment(rand_augment_magnitude, rand_augment_num_layers),
+            # swap_axes,  # (T, C, H, W) -> (C, T, H, W)
             CenterCropVideo(image_size),
             NormalizeVideo(mean=MEAN, std=STD),
         ]

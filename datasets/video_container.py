@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
-import av
-
+try:
+    import av
+except Exception:
+    pass
 
 def get_video_container(path_to_vid, multi_thread_decode=False, backend="pyav"):
     """
