@@ -6,17 +6,17 @@ then
 fi
 
 
-DEVICE="RTX2080Ti"
+DEVICE="Xavier"
 DATASET="kinetics400"
 BATCH_SIZE=8
 LOGGING_BACKEND="wandb"
 GPUS=1
-PRECISION=32
+PRECISION=16
 
 
 MODEL="coi3d"
 
-python models/coi3d/main.py \
+python3 models/coi3d/main.py \
     --id "${MODEL}_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --gpus $GPUS \
@@ -29,7 +29,7 @@ python models/coi3d/main.py \
     --precision $PRECISION \
 
 
-python models/coi3d/main.py \
+python3 models/coi3d/main.py \
     --id "${MODEL}_64_profile_${DATASET}_${DEVICE}" \
     --dataset kinetics400 \
     --gpus $GPUS \
@@ -47,7 +47,7 @@ python models/coi3d/main.py \
 
 MODEL="coslow"
 
-python models/coslow/main.py \
+python3 models/coslow/main.py \
     --id "${MODEL}_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --gpus $GPUS \
@@ -60,7 +60,7 @@ python models/coslow/main.py \
     --precision $PRECISION \
 
 
-python models/coslow/main.py \
+python3 models/coslow/main.py \
     --id "${MODEL}_64_profile_${DATASET}_${DEVICE}" \
     --dataset kinetics400 \
     --gpus $GPUS \
@@ -81,8 +81,8 @@ BATCH_SIZE=64
 
 for SIZE in s m
 do
-    python models/cox3d/main.py \
-        --id "${MODEL}_${SIZE}_profile_${DATASET}" \
+    python3 models/cox3d/main.py \
+        --id "${MODEL}_${SIZE}_profile_${DATASET}_${DEVICE}" \
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
@@ -94,8 +94,8 @@ do
         --precision $PRECISION \
 
 
-    python models/cox3d/main.py \
-        --id "${MODEL}_${SIZE}_64_profile_${DATASET}" \
+    python3 models/cox3d/main.py \
+        --id "${MODEL}_${SIZE}_64_profile_${DATASET}_${DEVICE}" \
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
@@ -110,11 +110,11 @@ do
 done
 
 SIZE=l
-BATCH_SIZE=32
+BATCH_SIZE=16
 
 
-python models/cox3d/main.py \
-    --id "${MODEL}_${SIZE}_profile_${DATASET}" \
+python3 models/cox3d/main.py \
+    --id "${MODEL}_${SIZE}_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --gpus $GPUS \
     --seed 123 \
@@ -126,8 +126,8 @@ python models/cox3d/main.py \
     --precision $PRECISION \
 
 
-python models/cox3d/main.py \
-    --id "${MODEL}_${SIZE}_64_profile_${DATASET}" \
+python3 models/cox3d/main.py \
+    --id "${MODEL}_${SIZE}_64_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --gpus $GPUS \
     --seed 123 \
@@ -143,9 +143,9 @@ python models/cox3d/main.py \
 
 
 MODEL="i3d"
-BATCH_SIZE=32
+BATCH_SIZE=16
 
-python models/i3d/main.py \
+python3 models/i3d/main.py \
     --id "${MODEL}_profile_${DATASET}" \
     --dataset $DATASET \
     --gpus 1 \
@@ -160,9 +160,9 @@ python models/i3d/main.py \
 
 
 MODEL="r2plus1d"
-BATCH_SIZE=8
+BATCH_SIZE=16
 
-python models/r2plus1d/main.py \
+python3 models/r2plus1d/main.py \
     --id "${MODEL}_8_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --seed 123 \
@@ -173,7 +173,7 @@ python models/r2plus1d/main.py \
     --logging_backend $LOGGING_BACKEND \
     --precision $PRECISION \
 
-python models/r2plus1d/main.py \
+python3 models/r2plus1d/main.py \
     --id "${MODEL}_16_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --seed 123 \
@@ -190,7 +190,7 @@ python models/r2plus1d/main.py \
 MODEL="slow"
 BATCH_SIZE=8
 
-python models/slow/main.py \
+python3 models/slow/main.py \
     --id "${MODEL}_profile_${DATASET}_${DEVICE}" \
     --from_hparams_file models/slow/hparams/slow_8x8.yaml \
     --dataset $DATASET \
@@ -205,11 +205,11 @@ python models/slow/main.py \
 
 
 MODEL="slowfast"
-BATCH_SIZE=16
+BATCH_SIZE=32
 
 for SIZE in 4x16_R50 8x8_R50
 do
-    python models/slowfast/main.py \
+    python3 models/slowfast/main.py \
         --id "${MODEL}_${SIZE}_profile_${DATASET}_${DEVICE}" \
         --dataset $DATASET \
         --seed 123 \
@@ -231,7 +231,7 @@ BATCH_SIZE=64
 
 for SIZE in xs s m
 do
-    python models/x3d/main.py \
+    python3 models/x3d/main.py \
         --id "${MODEL}_${SIZE}_profile_${DATASET}_${DEVICE}" \
         --dataset $DATASET \
         --gpus $GPUS \
@@ -248,7 +248,7 @@ done
 SIZE=l
 BATCH_SIZE=32
 
-python models/x3d/main.py \
+python3 models/x3d/main.py \
     --id "${MODEL}_${SIZE}_profile_${DATASET}_${DEVICE}" \
     --dataset $DATASET \
     --gpus $GPUS \
