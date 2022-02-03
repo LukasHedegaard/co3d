@@ -1,15 +1,16 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
-from ride import Configs, RideModule
-from ride.metrics import TopKAccuracyMetric, MetricSelector
+from functools import partial
+
+from ride.metrics import MetricSelector, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
-from functools import partial
 from datasets import ActionRecognitionDatasets
 from metrics import CalibratedMeanAveragePrecisionMetric
-from models.cox3d.modules.x3d import CoX3D
 from models.common import Co3dBase
+from models.cox3d.modules.x3d import CoX3D
+from ride import Configs, RideModule
 
 logger = getLogger("CoX3D")
 

@@ -1,5 +1,6 @@
-import continual as co
 import torch
+
+import continual as co
 
 
 class Swish(torch.nn.Module):

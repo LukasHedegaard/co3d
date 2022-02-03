@@ -1,16 +1,17 @@
 # Modified from https://github.com/facebookresearch/SlowFast/blob/master/slowfast/datasets/ssv2.py
 
+import json
 import random
 from itertools import chain as chain
 from pathlib import Path
 from typing import List
-import json
+
 import torch
 import torch.utils.data
 from ride.utils.logging import getLogger
 from torchvision.io import read_image
+
 from . import utils as utils
-import numpy as np
 
 # from ride.utils.env import CACHE_PATH
 # from joblib import Memory

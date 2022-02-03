@@ -5,7 +5,6 @@ from typing import List, Tuple, Union
 
 import torch
 from pytorchvideo.transforms import RandAugment
-from ride import Configs, RideClassificationDataset
 from ride.utils.env import DATASETS_PATH, NUM_CPU
 from ride.utils.logging import getLogger
 from torch.utils.data import DataLoader, Dataset
@@ -18,12 +17,13 @@ from torchvision.transforms._transforms_video import (
 
 from datasets.ava import Ava
 from datasets.charades import Charades
-from datasets.ssv2 import Ssv2
 from datasets.kinetics import Kinetics
+from datasets.ssv2 import Ssv2
 from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
 from datasets.tvseries import TvSeries
 from datasets.video_ensemble import SpatiallySamplingVideoEnsemble
+from ride import Configs, RideClassificationDataset
 
 logger = getLogger("datasets")
 

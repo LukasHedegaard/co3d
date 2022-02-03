@@ -1,7 +1,6 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
 
-from ride import Configs, RideModule
 from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
@@ -9,6 +8,7 @@ from ride.utils.logging import getLogger
 from datasets import ActionRecognitionDatasets
 from models.common import Co3dBase, CoResNet
 from models.slowfast.model_loading import map_loaded_weights_from_caffe2
+from ride import Configs, RideModule
 
 logger = getLogger("CoI3D")
 

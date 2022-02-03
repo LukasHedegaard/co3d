@@ -2,12 +2,12 @@ from collections import OrderedDict
 from functools import partial
 from typing import Sequence, Tuple
 
-import continual as co
 import torch
 from torch import nn
 from torch.functional import Tensor
 from torchvision.ops import RoIAlign, roi_align
 
+import continual as co
 from models.common.res import CoResStage, init_weights
 
 # Number of blocks for different stages given the model depth.
