@@ -5,9 +5,9 @@ import torch
 from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
+from ride.utils.utils import name
 
 from continual import CoModule, TensorPlaceholder
-from ride.utils.utils import name
 
 logger = getLogger("co3d")
 

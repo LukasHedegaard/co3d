@@ -1,9 +1,9 @@
 from ride import Main  # isort:skip
+from ride import Configs, RideModule, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 
 from datasets import ActionRecognitionDatasets
 from models.slowfast.video_model_builder import ResNet
-from ride import Configs, RideModule, TopKAccuracyMetric
 
 
 class Slow(

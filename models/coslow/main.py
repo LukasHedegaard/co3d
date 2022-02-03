@@ -1,13 +1,13 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
 
+from ride import Configs, RideModule
 from ride.metrics import MeanAveragePrecisionMetric, MetricSelector, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
 from models.common import Co3dBase, CoResNet
-from ride import Configs, RideModule
 
 logger = getLogger("CoSlow")
 
