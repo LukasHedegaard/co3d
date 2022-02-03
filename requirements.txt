@@ -1,4 +1,4 @@
-ride~=0.5.0
+ride~=0.6.0
 torchvision
 av
 continual-inference

@@ -1,30 +1,41 @@
 #!/bin/bash
 
-PROJECT=models/x3d
+if [ ! -f .env ]
+then
+  export $(cat .env | xargs)
+fi
+
+
+MODEL="x3d"
 DATASET=kinetics400
-GPUS=1
+BATCH_SIZE=64
+GPUS=1 
+LOGGING_BACKEND="wandb"
 
-for MODEL in xs s m
+for SIZE in xs s m
 do
-
-    python $PROJECT/main.py \
-        --id x3d_profile_kinetics400 \
+    python models/x3d/main.py \
+        --id "${MODEL}_${SIZE}_profile_${DATASET}" \
         --dataset $DATASET \
         --gpus $GPUS \
         --seed 123 \
-        --batch_size 64 \
-        --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
+        --batch_size $BATCH_SIZE \
+        --from_hparams_file models/x3d/hparams/$SIZE.yaml \
         --profile_model \
-        --precision 16 \
+        --logging_backend $LOGGING_BACKEND \
+
 
 done
 
-python $PROJECT/main.py \
-    --id x3d_profile_kinetics400 \
+SIZE=l
+BATCH_SIZE=32
+
+python models/x3d/main.py \
+    --id "${MODEL}_${SIZE}_profile_${DATASET}" \
     --dataset $DATASET \
     --gpus $GPUS \
     --seed 123 \
-    --batch_size 32 \
-    --from_hparams_file $PROJECT/hparams/l.yaml \
+    --batch_size $BATCH_SIZE \
+    --from_hparams_file models/x3d/hparams/$SIZE.yaml \
     --profile_model \
-    --precision 16 \
+    --logging_backend $LOGGING_BACKEND \

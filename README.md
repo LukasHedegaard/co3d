@@ -38,7 +38,7 @@ Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further traini
 <br>
   Benchmark of state-of-the-art methods on Kinetics-400. The noted accuracy is the single clip or frame top-1 score using RGB as the only input-modality. 
   The performance was evaluated using publicly available pre-trained models without any further fine-tuning.
-  For speed comparison, evaluations per second denote frames per second for the CoX3D models and clips per second for the remaining models. Speed results are the mean +- std of 100 measurements. 
+  For thoughput comparison, evaluations per second denote frames per second for the CoX3D models and clips per second for the remaining models. Throughput results are the mean +/- std of 100 measurements. Pareto-optimal models are marked with bold. Mem. is the maximum allocated memory during inference noted in megabytes.
 </div>
 
 
@@ -81,9 +81,12 @@ _CoX3D_ is the Continual-CNN implementation of X3D.
 In contrast to regular 3D CNNs, which take a whole video clip as input, Continual CNNs operate frame-by-frame and can thus speed up computation by a significant margin.
 
 
-## [CoSlow](models/coresnet/README.md)
+## [CoSlow](models/coslow/README.md)
 _CoSlow_ is the Continual-CNN implementation of Slow.
 
+
+## [CoI3D](models/coi3d/README.md)
+_CoSlow_ is the Continual-CNN implementation of I3d.
 
 
 ## [X3D](models/x3d/README.md)
@@ -126,6 +129,7 @@ Overview tables for scripts used to download weights, run the model test-sequenc
 | R(2+1)D-18    | Kinetics | [download](https://download.pytorch.org/models/r2plus1d_18-91a641e6.pth)
 | SlowFast-8x8  | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_8x8_R50.pkl)
 | SlowFast-4x16 | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/model_zoo/kinetics400/SLOWFAST_4x16_R50.pkl)
+| Slow-8x8      | Kinetics | [download](https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/kinetics/SLOW_8x8_R50.pyth)
 | (Co)X3D-XS    | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_xs.pyth)
 | (Co)X3D-S     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_s.pyth)
 | (Co)X3D-M     | Kinetics | [download](https://dl.fbaipublicfiles.com/pyslowfast/x3d_models/x3d_m.pyth)
@@ -142,8 +146,11 @@ The scripts should be executed from project root.
 | I3D-R50       | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
 | R(2+1)D-18    | [`./models/r2plus1d/scripts/test/kinetics400.sh`](models/r2plus1d/scripts/test/kinetics400.sh) | 
 | SlowFast      | [`./models/slowfast/scripts/test/kinetics400.sh`](models/slowfast/scripts/test/kinetics400.sh) | 
+| Slow          | [`./models/slow/scripts/test/kinetics400.sh`](models/slow/scripts/test/kinetics400.sh) | 
 | X3D           | [`./models/x3d/scripts/test/kinetics400.sh`](models/x3d/scripts/test/kinetics400.sh) | 
-| CoX3D         | [`./models/i3d/scripts/test/kinetics400.sh`](models/i3d/scripts/test/kinetics400.sh) | 
+| CoX3D         | [`./models/cox3d/scripts/test/kinetics400.sh`](models/cox3d/scripts/test/kinetics400.sh) | 
+| CoSlow        | [`./models/coslow/scripts/test/kinetics400.sh`](models/coslow/scripts/test/kinetics400.sh) | 
+| CoI3D         | [`./models/coi3d/scripts/test/kinetics400.sh`](models/coi3d/scripts/test/kinetics400.sh) | 
 
 
 ## Evaluate on Charades
@@ -152,7 +159,7 @@ The scripts should be executed from project root.
 
 | Model         | Script |
 | -------       | -------- | 
-| (Co)Slow-8x8       | [`./models/coresnet/scripts/test/charades.sh`](models/coresnet/scripts/test/charades.sh) | 
+| (Co)Slow-8x8       | [`./models/coslow/scripts/test/charades.sh`](models/coslow/scripts/test/charades.sh) | 
 
 
 ## Benchmark FLOPs and throughput
@@ -163,9 +170,11 @@ The scripts should be executed from project root.
 | I3D-R50       | [`./models/i3d/scripts/profile/kinetics400.sh`](models/i3d/scripts/profile/kinetics400.sh) | 
 | R(2+1)D-18    | [`./models/r2plus1d/scripts/profile/kinetics400.sh`](models/r2plus1d/scripts/profile/kinetics400.sh) | 
 | SlowFast      | [`./models/slowfast/scripts/profile/kinetics400.sh`](models/slowfast/scripts/profile/kinetics400.sh) | 
-| (Co)Slow         | [`./models/coresnet/scripts/profile/charades.sh`](models/coresnet/scripts/profile/charades.sh) | 
+| Slow          | [`./models/slow/scripts/profile/kinetics400.sh`](models/slow/scripts/profile/kinetics400.sh) | 
 | X3D           | [`./models/x3d/scripts/profile/kinetics400.sh`](models/x3d/scripts/profile/kinetics400.sh) | 
 | CoX3D         | [`./models/cox3d/scripts/profile/kinetics400.sh`](models/cox3d/scripts/profile/kinetics400.sh) | 
+| CoI3D         | [`./models/coi3d/scripts/profile/kinetics400.sh`](models/coi3d/scripts/profile/kinetics400.sh) | 
+| CoSlow        | [`./models/coslow/scripts/profile/kinetics400.sh`](models/coslow/scripts/profile/kinetics400.sh) | 
 
 
 # Citation   

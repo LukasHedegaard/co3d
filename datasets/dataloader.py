@@ -46,6 +46,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             default="kinetics400",
             choices=[
                 "kinetics400",
+                "kinetics600",
                 "kinetics3",
                 "charades",
             ],
@@ -185,6 +186,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
 
         self.task = {
             "kinetics400": "classification",
+            "kinetics600": "classification",
             "kinetics3": "classification",
             "charades": "classification",
         }[self.hparams.dataset]
@@ -477,6 +479,11 @@ def train_val_test(
                 ),
                 global_transform=discard_audio,
             )
+            # if test_ensemble_temporal_clips > 1:
+            #     test = TemporallySamplingVideoEnsemble(
+            #         dataset=test,
+            #         num_temporal_clips=test_ensemble_temporal_clips,
+            #     )
 
         test = SpatiallySamplingVideoEnsemble(
             dataset=test,

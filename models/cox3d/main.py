@@ -1,12 +1,14 @@
 """ CoX3D main """
 from ride import Main  # isort:skip
+from functools import partial
 
 from ride import Configs, RideModule
-from ride.metrics import TopKAccuracyMetric
+from ride.metrics import MetricSelector, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
+from metrics import CalibratedMeanAveragePrecisionMetric
 from models.common import Co3dBase
 from models.cox3d.modules.x3d import CoX3D
 
@@ -18,7 +20,11 @@ class CoX3DRide(
     Co3dBase,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
-    TopKAccuracyMetric(1),
+    MetricSelector(
+        kinetics400=TopKAccuracyMetric(1),
+        tvseries=CalibratedMeanAveragePrecisionMetric,
+        default_config="kinetics400",
+    ),
 ):
     @staticmethod
     def configs() -> Configs:
@@ -143,6 +149,10 @@ class CoX3DRide(
             self.hparams.co3d_temporal_fill,
             se_scope="frame",
         )
+
+        # Ensure that state-dict is flattened
+        self.load_state_dict = partial(self.module.load_state_dict, flatten=True)
+        self.state_dict = partial(self.module.state_dict, flatten=True)
 
 
 if __name__ == "__main__":

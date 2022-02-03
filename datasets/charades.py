@@ -11,6 +11,10 @@ import torch.utils.data
 from ride.utils.logging import getLogger
 from torchvision.io import read_image
 
+# from ride.utils.env import CACHE_PATH
+# from joblib import Memory
+# cache = Memory(CACHE_PATH, verbose=1).cache
+
 logger = getLogger(__name__)
 
 
@@ -222,6 +226,7 @@ class Charades(torch.utils.data.Dataset):
         return len(self.path_to_videos)
 
 
+# @cache
 def load_annotations(
     annotation_path: str,
     split: str,

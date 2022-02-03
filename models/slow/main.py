@@ -1,12 +1,12 @@
+from ride import Main  # isort:skip
 from ride import Configs, RideModule, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 
 from datasets import ActionRecognitionDatasets
-from models.slowfast.model_loading import map_loaded_weights_from_caffe2
 from models.slowfast.video_model_builder import ResNet
 
 
-class I3D(
+class Slow(
     RideModule,
     ResNet,
     ActionRecognitionDatasets,
@@ -75,7 +75,7 @@ class I3D(
 
         ResNet.__init__(
             self,
-            model_arch="i3d",
+            model_arch="slow",
             resnet_depth=self.hparams.resnet_depth,
             image_size=image_size,
             temporal_window_size=self.hparams.temporal_window_size,
@@ -91,8 +91,29 @@ class I3D(
         x = [x]
         return ResNet.forward(self, x)
 
-    def map_loaded_weights(self, file, loaded_state_dict):
-        # Called from FinetuneMixin
-        if file[-4:] == ".pkl":
-            return map_loaded_weights_from_caffe2(loaded_state_dict, self)
-        return loaded_state_dict
+    def map_loaded_weights(self, finetune_from_weights, state_dict):
+        # Map state_dict for "Slow" weights
+        state_dict = {
+            (
+                k.replace(".res_blocks.", ".res")
+                .replace("blocks.0", "s1.pathway0_stem")
+                .replace("blocks.1.", "s2.pathway0_")
+                .replace("blocks.2.", "s3.pathway0_")
+                .replace("blocks.3.", "s4.pathway0_")
+                .replace("blocks.4.", "s5.pathway0_")
+                .replace("blocks.5.", "head.")
+                .replace("norm", "bn")
+                .replace("bn_a", "a_bn")
+                .replace("bn_b", "b_bn")
+                .replace("bn_c", "c_bn")
+                .replace("_conv", "")
+                .replace("conv_", "")
+                .replace("proj", "projection")
+            ): v
+            for k, v in state_dict.items()
+        }
+        return state_dict
+
+
+if __name__ == "__main__":
+    Main(Slow).argparse()

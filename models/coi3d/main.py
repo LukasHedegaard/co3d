@@ -2,36 +2,27 @@
 from ride import Main  # isort:skip
 
 from ride import Configs, RideModule
-from ride.metrics import MeanAveragePrecisionMetric, TopKAccuracyMetric
+from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from models.common import Co3dBase
-from models.coresnet.modules.coresnet import CoResNet
+from models.common import Co3dBase, CoResNet
+from models.slowfast.model_loading import map_loaded_weights_from_caffe2
 
-logger = getLogger("CoResNet")
+logger = getLogger("CoI3D")
 
 
-class CoResNetRide(
+class CoI3DRide(
     RideModule,
     Co3dBase,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
     TopKAccuracyMetric(1),
-    MeanAveragePrecisionMetric,
 ):
     @staticmethod
     def configs() -> Configs:
         c = Configs()
-        c.add(
-            name="resnet_architecture",
-            type=str,
-            default="slow",
-            strategy="constant",
-            choices=["slow", "i3d"],
-            description="Architecture of ResNet.",
-        )
         c.add(
             name="resnet_depth",
             type=int,
@@ -85,27 +76,11 @@ class CoResNetRide(
             strategy="choice",
             description="If true, initialize the gamma of the final BN of each block to zero.",
         )
-        c.add(
-            name="enable_detection",
-            type=int,
-            default=0,
-            strategy="choice",
-            choices=[0, 1],
-            description="Whether to enable detection head.",
-        )
-        c.add(
-            name="align_detection",
-            type=int,
-            default=0,
-            strategy="choice",
-            choices=[0, 1],
-            description="Whether to utilise alignment in detection head.",
-        )
         return c
 
     def __init__(self, hparams):
         self.module = CoResNet(
-            arch=self.hparams.resnet_architecture,
+            arch="i3d",
             dim_in=self.dim_in,
             image_size=self.hparams.image_size,
             temporal_window_size=self.hparams.temporal_window_size,
@@ -122,25 +97,40 @@ class CoResNetRide(
             temporal_fill=self.hparams.co3d_temporal_fill,
         )
 
-    def map_loaded_weights(self, finetune_from_weights, state_dict):
-        # Map state_dict for "Slow" weights
-        state_dict = {
-            (
-                k.replace("model.", "")
-                .replace("blocks", "module")
-                .replace("res_module.", "pathway0_res")
-                .replace("branch1_conv", "0.0.branch1")
-                .replace("branch1_norm", "0.0.branch1_bn")
-                .replace("branch2", "0.1.branch2")
-                .replace("3.pathway0_res0.0.0.", "3.pathway0_res0.0.0.0.")
-                .replace("4.pathway0_res0.0.0.", "4.pathway0_res0.0.0.0.")
-                .replace("detection_head", "module.5")
-                .replace("proj", "projection")
-            ): v
-            for k, v in state_dict.items()
-        }
-        return state_dict
+    def map_loaded_weights(self, file, loaded_state_dict):
+        # Called from FinetuneMixin
+
+        def convert_key(k):
+            if not k:
+                return k
+            k = "module." + k
+            k = k.replace(".s1.", ".0.")
+            k = k.replace(".s2.", ".1.")
+            k = k.replace(".s3.", ".2.")
+            k = k.replace(".s4.", ".3.")
+            k = k.replace(".s5.", ".4.")
+            k = k.replace(".head.", ".5.")
+            k = k.replace("pathway0_stem.", "")
+            k = k.replace("a_bn", "norm_a")
+            k = k.replace("b_bn", "norm_b")
+            k = k.replace("c_bn", "norm_c")
+            k = k.replace(".bn.", ".norm.")
+            k = k.replace(".a.", ".conv_a.")
+            k = k.replace(".b.", ".conv_b.")
+            k = k.replace(".c.", ".conv_c.")
+            k = k.replace("branch1_conv", "0.0.branch1")
+            k = k.replace("branch1_norm", "0.0.branch1_bn")
+            k = k.replace("branch2", "0.1.branch2")
+            k = k.replace("pathway0_res0.branch1", "pathway0_res0.0.0.0.branch1")
+            k = k.replace(
+                "4.pathway0_res0.0.0.0.branch1", "4.pathway0_res0.0.0.branch1"
+            )
+            return k
+
+        if file[-4:] == ".pkl":
+            return map_loaded_weights_from_caffe2(loaded_state_dict, self, convert_key)
+        return loaded_state_dict
 
 
 if __name__ == "__main__":
-    Main(CoResNetRide).argparse()
+    Main(CoI3DRide).argparse()

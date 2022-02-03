@@ -1,51 +1,28 @@
 #!/bin/bash
 
-PROJECT=models/slowfast
-DATASET=kinetics400
+if [ ! -f .env ]
+then
+  export $(cat .env | xargs)
+fi
 
-# CPU
-for MODEL in 4x16_R50 8x8_R50
+MODEL="slowfast"
+DATASET="kinetics400"
+BATCH_SIZE=16
+logging_backend="wandb"
+GPUS=1
+
+
+for SIZE in 4x16_R50 8x8_R50
 do
-    python $PROJECT/main.py \
-        --id slowfast_profile_kinetics400 \
+    python models/slowfast/main.py \
+        --id "${MODEL}_${SIZE}_profile_${DATASET}" \
         --dataset $DATASET \
         --seed 123 \
-        --batch_size 16 \
-        --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
+        --gpus $GPUS \
+        --batch_size $BATCH_SIZE \
+        --from_hparams_file models/slowfast/hparams/$SIZE.yaml \
+        --logging_backend $LOGGING_BACKEND \
         --profile_model \
-        --gpus 0 \
         --image_size 256 \
 
 done
-
-# GPU
-# for MODEL in 4x16_R50 8x8_R50
-# do
-#     CUDA_VISIBLE_DEVICES=0 \
-#     python $PROJECT/main.py \
-#         --id slowfast_profile_kinetics400 \
-#         --dataset $DATASET \
-#         --seed 123 \
-#         --batch_size 16 \
-#         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
-#         --profile_model \
-#         --gpus 1 \
-#         --image_size 256 \
-
-# done
-
-# XAVIER
-# MODEL in 4x16_R50 8x8_R50
-# do
-#     python $PROJECT/main.py \
-#         --id slowfast_profile_kinetics400 \
-#         --dataset $DATASET \
-#         --seed 123 \
-#         --batch_size 32 \
-#         --from_hparams_file $PROJECT/hparams/$MODEL.yaml \
-#         --profile_model \
-#         --gpus 1 \
-#         --image_size 256 \
-#         --precision 16 \
-
-# done

@@ -1,0 +1,5 @@
+# Using hparans as found in 
+# https://github.com/facebookresearch/SlowFast/tree/master/configs/Kinetics
+temporal_window_size: 8
+temporal_downsampling: 8 # Named SAMPLING_RATE in SlowRast repo
+image_size: 256
