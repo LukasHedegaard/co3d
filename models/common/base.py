@@ -7,8 +7,6 @@ from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
 
 from continual import CoModule, TensorPlaceholder
-from datasets.ava import ava_loss, preprocess_ava_batch
-from losses.ce import MultiCrossEntropyLoss
 from ride.utils.utils import name
 
 logger = getLogger("co3d")
@@ -126,14 +124,6 @@ class Co3dBase(RideMixin):
         if "frame" in self.hparams.co3d_forward_mode:
             self.module.call_mode = "forward_steps"  # default = "forward"
 
-        if self.hparams.dataset == "ava":
-            self.loss = ava_loss(self.loss)
-            self.hparams.enable_detection = True
-            self.task
-        elif self.hparams.dataset == "tvseries":
-            self.loss = MultiCrossEntropyLoss(ignore_index=0)
-            self.hparams.mean_average_precision_skip_classes = [0]
-
         logger.info(f"Model receptive field: {self.module.receptive_field} frames")
         logger.info(f"Training loss: {name(self.loss)}")
 
@@ -155,23 +145,6 @@ class Co3dBase(RideMixin):
                 self.module(zeros)
         if prevously_training:
             self.module.train()
-
-    def preprocess_batch(self, batch):
-        """Overloads method in ride.Lifecycle"""
-        if self.hparams.dataset == "ava":
-            batch = preprocess_ava_batch(batch)
-        if self.hparams.dataset == "tvseries":
-            y = batch[1]
-
-            # Remove labels for initialisation frames
-            y = y[:, -self.hparams.co3d_num_forward_frames :]
-
-            # Collapse batch and temporal dimension
-            y = y.reshape(y.shape[0] * y.shape[1], -1)
-
-            batch[1] = y
-
-        return batch
 
     def forward(self, x):
         result = None
