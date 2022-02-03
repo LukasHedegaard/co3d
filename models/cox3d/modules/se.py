@@ -1,10 +1,9 @@
 from collections import OrderedDict
 
+import continual as co
 import torch
 from torch import Tensor, nn
 from torch.nn.modules.pooling import AdaptiveAvgPool2d
-
-import continual as co
 
 from .activation import Swish
 

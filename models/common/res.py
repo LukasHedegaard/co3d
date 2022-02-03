@@ -1,11 +1,10 @@
 from collections import OrderedDict
 from typing import Callable
 
-import torch
-from torch import nn
-
 import continual as co
+import torch
 from continual import PaddingMode
+from torch import nn
 
 
 def CoResBlock(

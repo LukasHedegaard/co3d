@@ -1,11 +1,11 @@
 import math
 from collections import OrderedDict
 
+import continual as co
 import torch
+from continual import PaddingMode
 from torch import nn
 
-import continual as co
-from continual import PaddingMode
 from models.common import CoResStage, init_weights
 
 from .activation import Swish

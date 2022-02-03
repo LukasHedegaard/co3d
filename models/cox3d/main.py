@@ -2,13 +2,13 @@
 from ride import Main  # isort:skip
 from functools import partial
 
-from metrics import CalibratedMeanAveragePrecisionMetric
 from ride import Configs, RideModule
 from ride.metrics import MetricSelector, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
+from metrics import CalibratedMeanAveragePrecisionMetric
 from models.common import Co3dBase
 from models.cox3d.modules.x3d import CoX3D
 
