@@ -36,7 +36,7 @@ class Co3dBase(RideMixin):
             default="init_frame",
             choices=["clip", "frame", "init_frame"],
             strategy="choice",
-            description="Whether to compute clip or frame during forward. If 'clip_init_frame', the network is initialised with a clip and then frame forwards are applied.",
+            description="Whether to compute clip or frame during forward. If 'init_frame', the network is initialised with a clip and then frame forwards are applied.",
         )
         c.add(
             name="co3d_num_forward_frames",
@@ -49,7 +49,7 @@ class Co3dBase(RideMixin):
             type=int,
             default=-1,
             strategy="choice",
-            description="Number of frames forwards prior to final prediction in 'clip_init_frame' mode. If '-1', a delay of clip_length - 1 is used",
+            description="Number of frames forwards prior to final prediction in 'init_frame' mode. If '-1', a delay of clip_length - 1 is used",
         )
         c.add(
             name="co3d_forward_prediction_delay",
