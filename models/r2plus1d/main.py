@@ -1,6 +1,5 @@
 """ R2Plus1D main """
 from ride.main import Main  # isort:skip
-from ride import Configs, RideModule, TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from torchvision.models.video.resnet import (
     BasicBlock,
@@ -10,6 +9,7 @@ from torchvision.models.video.resnet import (
 )
 
 from datasets import ActionRecognitionDatasets
+from ride import Configs, RideModule, TopKAccuracyMetric
 
 
 class R2Plus1D(
