@@ -1,8 +1,10 @@
 from pathlib import Path
 from urllib.request import urlretrieve
 
+import continual as co
 import numpy as np
 import torch
+from continual import TensorPlaceholder
 from PIL import Image
 from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
@@ -11,8 +13,6 @@ from torchvision.transforms._transforms_video import (
     ToTensorVideo,
 )
 
-import continual as co
-from continual import TensorPlaceholder
 from datasets.transforms import RandomShortSideScaleJitterVideo
 from models.common.res import CoResBlock, CoResStage
 from models.cox3d.modules.x3d import CoX3D, CoX3DHead, CoX3DStem, CoX3DTransform

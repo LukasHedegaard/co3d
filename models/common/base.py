@@ -2,14 +2,14 @@ from operator import attrgetter
 from typing import Sequence
 
 import torch
+from continual import CoModule, TensorPlaceholder
 from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
+from ride.utils.utils import name
 
-from continual import CoModule, TensorPlaceholder
 from datasets.ava import ava_loss, preprocess_ava_batch
 from losses.ce import MultiCrossEntropyLoss
-from ride.utils.utils import name
 
 logger = getLogger("co3d")
 

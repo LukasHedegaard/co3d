@@ -1,11 +1,11 @@
 import math
 from collections import OrderedDict
 
+import continual as co
 import torch
+from continual import PaddingMode
 from torch import nn
 
-import continual as co
-from continual import PaddingMode
 from models.common import CoResStage, init_weights
 
 from .activation import Swish
@@ -155,6 +155,7 @@ def CoX3DHead(
     bn_lin5_on=False,
     temporal_window_size: int = 4,
     temporal_fill: PaddingMode = "zeros",
+    no_pool=False,
 ):
     """
     Continual X3D head.
@@ -181,6 +182,9 @@ def CoX3DHead(
         ("conv_5_bn", norm_module(num_features=dim_inner, eps=eps, momentum=bn_mmt))
     )
     modules.append(("conv_5_relu", torch.nn.ReLU(inplace_relu)))
+
+    if no_pool:
+        return co.Sequential(OrderedDict(modules))
 
     if pool_size is None:
         avg_pool = co.AdaptiveAvgPool3d(
@@ -440,21 +444,21 @@ def CoX3D(
         dim_in = dim_out
         modules.append((prefix, s))
 
-    if not headless:
-        spat_sz = int(math.ceil(image_size / 32.0))
-        head = CoX3DHead(
-            dim_in=dim_out,
-            dim_inner=dim_inner,
-            dim_out=x3d_conv5_dim,
-            num_classes=num_classes,
-            pool_size=(temporal_window_size, spat_sz, spat_sz),
-            dropout_rate=x3d_dropout_rate,
-            act_func=x3d_head_activation,
-            bn_lin5_on=bool(x3d_head_batchnorm),
-            temporal_window_size=temporal_window_size,
-            temporal_fill=temporal_fill,
-        )
-        modules.append(("head", head))
+    spat_sz = int(math.ceil(image_size / 32.0))
+    head = CoX3DHead(
+        dim_in=dim_out,
+        dim_inner=dim_inner,
+        dim_out=x3d_conv5_dim,
+        num_classes=num_classes,
+        pool_size=(temporal_window_size, spat_sz, spat_sz),
+        dropout_rate=x3d_dropout_rate,
+        act_func=x3d_head_activation,
+        bn_lin5_on=bool(x3d_head_batchnorm),
+        temporal_window_size=temporal_window_size,
+        temporal_fill=temporal_fill,
+        no_pool=headless,
+    )
+    modules.append(("head", head))
     seq = co.Sequential(OrderedDict(modules))
     init_weights(seq, x3d_fc_std_init, bool(x3d_final_batchnorm_zero_init))
     return seq
