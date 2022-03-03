@@ -2,18 +2,33 @@ import argparse
 import pickle
 from pathlib import Path
 
+import timm
 import torch
-from torchvision.transforms import Compose
-from torchvision.transforms._transforms_video import (
-    CenterCropVideo,
-    NormalizeVideo,
-    ToTensorVideo,
-)
+from PIL import Image
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
 from tqdm import tqdm
 
 from datasets.thumos14 import decode_video
-from datasets.transforms import RandomShortSideScaleJitterVideo
-from models.cox3d.modules.x3d import CoX3D
+
+INPUT_SIZE = {
+    "efficientnet_b5": 456,
+    "efficientnet_b4": 380,
+    "efficientnet_b3a": 320,
+    "efficientnet_b3": 300,
+    "efficientnet_b3_pruned": 300,
+    "efficientnet_b2a": 288,
+    "efficientnet_b2": 260,
+    "efficientnet_b2_pruned": 260,
+    "efficientnet_b1": 240,
+    "efficientnet_b1_pruned": 240,
+    "efficientnet_b0": 224,
+    "resnet18": 224,
+    "resnet34": 224,
+    "resnet101": 224,
+    "resnet152": 224,
+}
+
 
 anno = {
     "train_session_set": [
@@ -437,125 +452,15 @@ anno = {
 
 
 def main(model, split):
-    num_classes = 22
-    dim_in = 3
-    temporal_window_size = 1
-
-    # Select hparams
-    if model == "s":
-        image_size = 160
-        x3d_conv1_dim = 12
-        x3d_conv5_dim = 2048
-        x3d_num_groups = 1
-        x3d_width_per_group = 64
-        x3d_width_factor = 2.0
-        x3d_depth_factor = 2.2
-        x3d_bottleneck_factor = 2.25
-        x3d_use_channelwise_3x3x3 = 1
-        x3d_dropout_rate = 0.5
-        x3d_head_activation = "softmax"
-        x3d_head_batchnorm = 0
-        x3d_fc_std_init = 0.01
-        x3d_final_batchnorm_zero_init = 1
-        target_fps = 5.0
-    elif model == "m":
-        image_size = 224
-        x3d_num_groups = 1
-        x3d_width_per_group = 64
-        x3d_width_factor = 2.0
-        x3d_depth_factor = 2.2
-        x3d_bottleneck_factor = 2.25
-        x3d_conv1_dim = 12
-        x3d_conv5_dim = 2048
-        x3d_use_channelwise_3x3x3 = 1
-        x3d_dropout_rate = 0.5
-        x3d_head_activation = "softmax"
-        x3d_head_batchnorm = 0
-        x3d_fc_std_init = 0.01
-        x3d_final_batchnorm_zero_init = 1
-        target_fps = 6.0
-    elif model == "l":
-        image_size = 312
-        x3d_num_groups = 1
-        x3d_width_per_group = 64
-        x3d_width_factor = 2.0
-        x3d_depth_factor = 5.0
-        x3d_bottleneck_factor = 2.25
-        x3d_conv1_dim = 12
-        x3d_conv5_dim = 2048
-        x3d_use_channelwise_3x3x3 = 1
-        x3d_dropout_rate = 0.5
-        x3d_head_activation = "softmax"
-        x3d_head_batchnorm = 0
-        x3d_fc_std_init = 0.01
-        x3d_final_batchnorm_zero_init = 1
-        target_fps = 6.0
+    target_fps = 5.0
+    block_size = 256
 
     # Define model
-    module = CoX3D(
-        dim_in,
-        image_size,
-        temporal_window_size,
-        num_classes,
-        x3d_conv1_dim,
-        x3d_conv5_dim,
-        x3d_num_groups,
-        x3d_width_per_group,
-        x3d_width_factor,
-        x3d_depth_factor,
-        x3d_bottleneck_factor,
-        x3d_use_channelwise_3x3x3,
-        x3d_dropout_rate,
-        x3d_head_activation,
-        x3d_head_batchnorm,
-        x3d_fc_std_init,
-        x3d_final_batchnorm_zero_init,
-        temporal_fill="zeros",
-        se_scope="frame",
-        headless=True,
-    )
-    module.call_mode = "forward_steps"
-
-    # Load weights
-    new_model_state = module.state_dict(flatten=True)
-    state_dict = torch.load(
-        f"/home/lh/projects/co3d/models/x3d/weights/x3d_{model}.pyth",
-        map_location="cpu",
-    )["model_state"]
-
-    def key_ok(k):
-        return k in new_model_state and k in state_dict
-
-    def size_ok(k):
-        return new_model_state[k].size() == state_dict[k].size()
-
-    to_load = {k: v for k, v in state_dict.items() if key_ok(k) and size_ok(k)}
-
-    module.load_state_dict(to_load, flatten=True, strict=False)
+    module = timm.create_model(model, pretrained=True)
 
     # Prepare transforms
-
-    MEAN, STD = ((0.45, 0.45, 0.45), (0.225, 0.225, 0.225))
-    # train_crop_pix, train_scale_pix_min, train_scale_pix_max = (140.0, 160, 200.0)
-    # train_transforms = Compose(
-    #     [
-    #         ToTensorVideo(),
-    #         RandomShortSideScaleJitterVideo(
-    #             min_size=train_scale_pix_min, max_size=train_scale_pix_max
-    #         ),
-    #         CenterCropVideo(image_size),
-    #         NormalizeVideo(mean=MEAN, std=STD),
-    #     ]
-    # )
-
-    eval_transforms = Compose(
-        [
-            ToTensorVideo(),
-            RandomShortSideScaleJitterVideo(min_size=image_size, max_size=image_size),
-            CenterCropVideo(image_size),
-            NormalizeVideo(mean=MEAN, std=STD),
-        ]
-    )
+    config = resolve_data_config({}, model=model)
+    transform = create_transform(**config)
 
     # Identify videos
     ds_path = Path(f"/mnt/archive/common/datasets/thumos14/data/{split}")
@@ -570,8 +475,6 @@ def main(model, split):
     device = torch.device("cuda")
     module = module.to(device=device)
     module.eval()
-    block_size = 256
-
     features = {}
 
     print(f"Extracting CoX3D-{model} features for THUMOS14-{split}")
@@ -584,37 +487,38 @@ def main(model, split):
                 print(f"Error decoding {p}")
                 continue
 
-            video = video
-            video = eval_transforms(video).unsqueeze(0)
+            video = torch.stack(
+                [transform(Image.fromarray(im.numpy(), mode="RGB")) for im in video],
+                dim=0,
+            )
 
-            # Warm up module
-            module.clean_state()
-            # module.warm_up(video.shape[:2] + video.shape[3:])
-
-            T = video.shape[2]
+            T = video.shape[0]
 
             # Save in blocks
             feat = []
             for start in range(0, T, block_size):
                 end = min(T, start + block_size)
 
-                f = module.forward_steps(video[:, :, start:end].to(device=device))
-                if len(f.shape) > 3:
+                f = module.forward_features(video[start:end].to(device=device))
+                if len(f.shape) > 2:
                     f = f.mean(dim=(-1, -2))
-                if isinstance(f, torch.Tensor):
-                    feat.append(f.detach().to(device=torch.device("cpu")))
+                feat.append(f.detach().to(device=torch.device("cpu")))
 
             if len(feat) > 0:
-                features[p.stem] = torch.cat(feat, dim=2)
+                features[p.stem] = torch.cat(feat, dim=0)
 
     # Save features
-    with open(f"cox3d_{split}_kin_features_{split}.pickle", "wb") as f:
+    with open(f"{model}_thumos14_{split}features.pickle", "wb") as f:
         pickle.dump(features, f)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="s", choices=["s", "m", "l"])
+    parser.add_argument(
+        "--model",
+        default="efficientnet_b0",
+        choices=["efficientnet_b0", "efficientnet_b1", "efficientnet_b2"],
+    )
     parser.add_argument("--split", default="val", choices=["val", "test"])
     args = parser.parse_args()
 
