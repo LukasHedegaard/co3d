@@ -2,5 +2,5 @@ ride~=0.6.0
 torchvision
 av
 continual-inference
-pytorchvideo ~= 0.1.8
+pytorchvideo ~= 0.1.5
 opencv-python
