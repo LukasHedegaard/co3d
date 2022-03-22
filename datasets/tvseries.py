@@ -186,6 +186,10 @@ class TvSeries(torch.utils.data.Dataset):
         num_clips = num_spatial_crops if self.split in ["test"] else 1
 
         self._clip_meta = []  # (video_id, start_idx, end_idx, clip_targets)
+
+        def factor(x):
+            return int(x * 25 / self.target_fps)
+
         for video_idx, video_id in enumerate(annotations.keys()):
             # Densely sample all sub-videos of with `frames_per_clip`
             # Use positional encording instead of one-hot, since there is only one action per time-step
@@ -209,7 +213,13 @@ class TvSeries(torch.utils.data.Dataset):
 
                 for _ in range(num_clips):
                     self._clip_meta.append(
-                        (video_idx, video_id, start_idx, end_idx, clip_targets)
+                        (
+                            video_idx,
+                            video_id,
+                            factor(start_idx),
+                            factor(end_idx),
+                            clip_targets,
+                        )
                     )
 
     def __len__(self):
@@ -274,6 +284,7 @@ def decode_video(
     start_idx: int,
     end_idx: int,
     target_fps: float,
+    transform_tensor=lambda x: x,
 ) -> Optional[torch.Tensor]:
     try:
         container = av.open(video_path)
@@ -294,9 +305,10 @@ def decode_video(
         video_start_pts, video_end_pts = 0, inf
     else:
         # Decode video selectively
-        timebase = video_fps / target_fps * pts_base
-        video_start_pts = int(start_idx * timebase)
-        video_end_pts = int((end_idx - 1) * timebase) + 1
+        video_start_pts = int(start_idx * pts_base)
+        if end_idx == -1:
+            end_idx = VIDEO_LENGTHS[Path(video_path).stem]
+        video_end_pts = int((end_idx - 1) * pts_base) + 1
 
     frames, _ = pyav_decode_stream(
         container,
@@ -306,7 +318,7 @@ def decode_video(
         seek_margin=100 * pts_base,
     )
     num_decoded_frames = len(frames)
-    num_wanted_frames = end_idx - start_idx
+    num_wanted_frames = round((end_idx - start_idx) / video_fps * target_fps)
 
     # Select frame indices
     frame_inds = torch.linspace(
@@ -323,13 +335,17 @@ def decode_video(
     frame_inds = frame_inds.long()
 
     # Convert to torch Tensor
-    frames = torch.as_tensor(
-        np.stack([frames[i].to_rgb().to_ndarray() for i in frame_inds])
+    frames_tensor = torch.stack(
+        [
+            transform_tensor(torch.as_tensor((frames[i].to_rgb().to_ndarray())))
+            for i in frame_inds
+        ]
     )
 
     container.close()
+    del frames
 
-    return frames
+    return frames_tensor
 
 
 def get_default_labels(video_path, target_fps: float):
@@ -353,13 +369,7 @@ def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps:
 
     logger.info(f"Preparing TV-Series labels for {split} split")
 
-    # label_dict = dict()
-
-    # Iterate through annotations and update
-    # class2idx = {c: i for i, c in enumerate(CLASSES)}
-
     annot_path = Path(annotation_path) / f"GT-{split}.txt"
-    # df = pd.read_csv(annot_path, sep="\t", header=None)
     # df.columns = [
     #     "video_id",  # series name and episode number (Name_Of_The_Series_epNUMBER)
     #     "class",  # class name (same as in classes.txt)
@@ -379,27 +389,6 @@ def prepare_labels(split: str, data_path: str, annotation_path: str, target_fps:
     #     "no_end",  # end of the action is missing? (yes/no)
     #     "comments",  # comments concerning the content of the action or the degree of occlusion and truncation (optional)
     # ]
-    # for _, row in df.iterrows():
-    #     video_id = row["video_id"]
-
-    #     if video_id not in label_dict:
-    #         # Parse video_length and prefill with `0`-actions
-    #         video_path = Path(data_path) / f"{video_id}.mkv"
-    #         lbls = get_default_labels(video_path, target_fps)
-    #         if lbls is None:
-    #             logger.error(f"Skipping unavailable video {str(video_path)}")
-    #             continue
-
-    #         label_dict[video_id] = lbls
-
-    #     class_index = class2idx[row["class"]]
-    #     start = round(float(row["start_sec"]) * target_fps)
-    #     stop = min(
-    #         round(float(row["end_sec"]) * target_fps),
-    #         len(label_dict[video_id]),
-    #     )
-
-    #     label_dict[video_id][start:stop] = [class_index for _ in range(stop - start)]
     df = pd.read_table(str(annot_path))
 
     # Output format: multi-hot encoding for each time-step
