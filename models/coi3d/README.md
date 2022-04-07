@@ -1,5 +1,5 @@
-# Continual Slow
-_Slow_ is the "slow" branch of the SlowFast network [[ArXiv](https://arxiv.org/abs/1812.03982), [Repo](https://github.com/facebookresearch/SlowFast)]
+# Continual I3D
+Continual implementation of Inflated 3D ConvNet [[ArXiv](https://arxiv.org/abs/1705.07750)]
 
 The code for this model is a port of [this implementation](https://github.com/facebookresearch/SlowFast) modified to work as a continual inference network.
 
