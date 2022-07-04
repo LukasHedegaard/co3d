@@ -190,3 +190,6 @@ The scripts should be executed from project root.
     year={2022},
 }
 ```
+
+## Acknowledgement
+This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 871449 (OpenDR).
