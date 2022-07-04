@@ -11,7 +11,7 @@ In online processing tasks demanding frame-wise predictions, Co3D CNNs dispense 
 Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further training, and reduce the floating point operations for frame-wise computations by more than an order of magnitude!
 
 ## News
-- Our paper _"Continual 3D Convolutional Neural Networks for Real-time Processing of Videos"_ has been accepted at the [European Conference on Computer Vision (ECCV) 2022](https://eccv2022.ecva.net)
+- Our paper _"Continual 3D Convolutional Neural Networks for Real-time Processing of Videos"_ has been accepted at the [European Conference on Computer Vision (ECCV) 2022](https://eccv2022.ecva.net).
 
 
 ## Principle 
