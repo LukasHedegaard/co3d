@@ -16,13 +16,9 @@ from torchvision.transforms._transforms_video import (
     ToTensorVideo,
 )
 
-from datasets.ava import Ava
 from datasets.charades import Charades
 from datasets.kinetics import Kinetics
-from datasets.ssv2 import Ssv2
-from datasets.thumos14 import Thumos14
 from datasets.transforms import RandomShortSideScaleJitterVideo, discard_audio
-from datasets.tvseries import TvSeries
 from datasets.video_ensemble import SpatiallySamplingVideoEnsemble
 
 logger = getLogger("datasets")
@@ -52,11 +48,7 @@ class ActionRecognitionDatasets(RideClassificationDataset):
                 "kinetics400",
                 "kinetics600",
                 "kinetics3",
-                "thumos14",
-                "tvseries",
                 "charades",
-                "ssv2",
-                "ava",
             ],
             strategy="constant",
             description=f"Dataset name. It is assumed that these datasets are available in the DATASETS_PATH env variable ({str(DATASETS_PATH)})",
@@ -197,10 +189,6 @@ class ActionRecognitionDatasets(RideClassificationDataset):
             "kinetics600": "classification",
             "kinetics3": "classification",
             "charades": "classification",
-            "ssv2": "classification",
-            "ava": "classification",
-            "thumos14": "detection",
-            "tvseries": "detection",
         }[self.hparams.dataset]
 
         return self.dataloader
@@ -371,16 +359,8 @@ def train_val_test(
 
     if "kinetics" in data_path.lower():
         Ds = Kinetics
-    elif "thumos14" in data_path.lower():
-        Ds = Thumos14
-    elif "tvseries" in data_path.lower():
-        Ds = TvSeries
     elif "charades" in data_path.lower():
         Ds = Charades
-    elif "ssv2" in data_path.lower():
-        Ds = Ssv2
-    elif "ava" in data_path.lower():
-        Ds = Ava
     else:
         raise ValueError(
             "'root_path' must contain either 'kinetics', 'thumos14', or 'tvseries'"

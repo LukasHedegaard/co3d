@@ -10,6 +10,9 @@ In online processing tasks demanding frame-wise predictions, Co3D CNNs dispense 
 
 Co3D CNNs are weight-compatible with regular 3D CNNs, do not need further training, and reduce the floating point operations for frame-wise computations by more than an order of magnitude!
 
+## News
+- 2022-07-04 Our paper _"Continual 3D Convolutional Neural Networks for Real-time Processing of Videos"_ has been accepted at the [European Conference on Computer Vision (ECCV) 2022](https://eccv2022.ecva.net).
+
 
 ## Principle 
 
@@ -179,10 +182,13 @@ The scripts should be executed from project root.
 
 # Citation   
 ```
-@article{hedegaard2021continual,
-  title={Continual 3D Convolutional Neural Networks for Real-time Processing of Videos},
-  author={Lukas Hedegaard and Alexandros Iosifidis},
-  journal={preprint, arXiv:2106.00050},
-  year={2021}
+@inproceedings{hedegaard2022continual,
+    title={Continual 3D Convolutional Neural Networks for Real-time Processing of Videos},
+    author={Lukas Hedegaard and Alexandros Iosifidis},
+    booktitle={European Conference on Computer Vision (ECCV)},
+    year={2022},
 }
 ```
+
+## Acknowledgement
+This work has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 871449 (OpenDR).
