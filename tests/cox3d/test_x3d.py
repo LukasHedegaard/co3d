@@ -783,4 +783,4 @@ def test_CoX3D_se_mod():
 
     # Less exact
     assert target_top10[0] == output_top10[0]
-    assert len(set(target_top10) - set(output_top10)) <= 6
+    assert len(set(target_top10) - set(output_top10)) <= 8

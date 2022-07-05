@@ -185,7 +185,6 @@ The scripts should be executed from project root.
 @inproceedings{hedegaard2022continual,
     title={Continual 3D Convolutional Neural Networks for Real-time Processing of Videos},
     author={Lukas Hedegaard and Alexandros Iosifidis},
-    pages={1--18},
     booktitle={European Conference on Computer Vision (ECCV)},
     year={2022},
 }

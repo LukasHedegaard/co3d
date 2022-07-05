@@ -3,12 +3,11 @@ from ride import Main  # isort:skip
 from functools import partial
 
 from ride import Configs, RideModule
-from ride.metrics import MetricSelector, TopKAccuracyMetric
+from ride.metrics import TopKAccuracyMetric
 from ride.optimizers import SgdOneCycleOptimizer
 from ride.utils.logging import getLogger
 
 from datasets import ActionRecognitionDatasets
-from metrics import CalibratedMeanAveragePrecisionMetric
 from models.common import Co3dBase
 from models.cox3d.modules.x3d import CoX3D
 
@@ -20,11 +19,7 @@ class CoX3DRide(
     Co3dBase,
     ActionRecognitionDatasets,
     SgdOneCycleOptimizer,
-    MetricSelector(
-        kinetics400=TopKAccuracyMetric(1),
-        tvseries=CalibratedMeanAveragePrecisionMetric,
-        default_config="kinetics400",
-    ),
+    TopKAccuracyMetric(1, 3, 5),
 ):
     @staticmethod
     def configs() -> Configs:
