@@ -29,7 +29,7 @@ def long_description():
 
 setup(
     name="co3d",
-    version="0.1.0",
+    version="1.0.0",
     description="Continual 3D Convolutional Neural Networks",
     author="Lukas Hedegaard",
     author_email="lukasxhedegaard@gmail.com",
