@@ -4,7 +4,11 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-Continual 3D Convolutional Neural Networks (Co3D CNNs) are a new computational formulation of spatio-temporal 3D CNNs, in which videos are processed frame-by-frame rather than by clip.
+<div align="center">
+<video src='https://github.com/LukasHedegaard/co3d/raw/c5891aaf6f76bb8bda0ddef238dd7a0feb1afc38/presentation/5612.mp4' width=512/>
+</div>
+
+Continual 3D Convolutional Neural Networks (Co3D CNNs) are a novel computational formulation of spatio-temporal 3D CNNs, in which videos are processed frame-by-frame rather than by clip.
 
 In online processing tasks demanding frame-wise predictions, Co3D CNNs dispense with the computational redundancies of regular 3D CNNs, namely the repeated convolutions over frames, which appear in multiple clips.
 
