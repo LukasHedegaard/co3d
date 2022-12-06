@@ -162,7 +162,7 @@ class CoSeAlt(co.CoModule, nn.Module):
             else:
                 x = module(x)
             if not isinstance(x, Tensor):
-                return co.TensorPlaceholder(x_in.shape)
+                return None
         return x_in * x
 
     def forward_steps(self, x: Tensor) -> Tensor:
@@ -173,7 +173,7 @@ class CoSeAlt(co.CoModule, nn.Module):
             else:
                 x = module(x)
             if not isinstance(x, Tensor):
-                return co.TensorPlaceholder(x_in.shape)
+                return None
         return x_in * x
 
     @property

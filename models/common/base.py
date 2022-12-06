@@ -2,7 +2,7 @@ from operator import attrgetter
 from typing import Sequence
 
 import torch
-from continual import CoModule, TensorPlaceholder
+from continual import CoModule
 from pytorch_lightning.utilities.parsing import AttributeDict
 from ride.core import Configs, RideMixin
 from ride.utils.logging import getLogger
@@ -159,7 +159,7 @@ class Co3dBase(RideMixin):
                 self.module.receptive_field - self.module.padding - 1,
                 self.hparams.co3d_forward_frame_delay - 1,
             )
-            assert isinstance(self.module(x[:, :, :num_init_frames]), TensorPlaceholder)
+            assert isinstance(self.module(x[:, :, :num_init_frames]), type(None))
 
             result = self.module(x[:, :, num_init_frames:])
         else:

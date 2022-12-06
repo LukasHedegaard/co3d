@@ -1,5 +1,4 @@
 import torch
-from continual import TensorPlaceholder
 
 from models.cox3d.modules.se import SE, CoSe, CoSeAlt
 
@@ -59,7 +58,7 @@ def test_se_block():
     # broken up
     cose.clean_state()
     nothing = cose.forward_steps(sample[:, :, :-1], pad_end=False)
-    assert isinstance(nothing, TensorPlaceholder)
+    assert isinstance(nothing, type(None))
 
     lasts = cose.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(target1, lasts)
