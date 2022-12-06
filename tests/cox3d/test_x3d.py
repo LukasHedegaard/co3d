@@ -4,7 +4,6 @@ from urllib.request import urlretrieve
 import continual as co
 import numpy as np
 import torch
-from continual import TensorPlaceholder
 from PIL import Image
 from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
@@ -117,7 +116,7 @@ def test_VideoModelStem():
     # forward_steps - broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-2], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     mid = cotrans.forward_step(sample[:, :, -2])
     assert torch.allclose(mid, target[:, :, 0])
@@ -186,7 +185,7 @@ def test_CoX3DTransform():
     # forward_steps - broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(lasts.squeeze(), target.squeeze())
@@ -194,7 +193,7 @@ def test_CoX3DTransform():
     # forward_step
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     # Manual pad end.
     zeros = torch.zeros_like(sample[:, :, 0])
@@ -339,7 +338,7 @@ def test_ResBlock():
     # Broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(lasts.squeeze(), target.squeeze())
@@ -404,7 +403,7 @@ def test_ResStage_single():
     # Broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(lasts.squeeze(), target.squeeze())
@@ -469,7 +468,7 @@ def test_ResStage_multi():
     # Broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(lasts.squeeze(), target.squeeze())
@@ -517,7 +516,7 @@ def test_CoX3DHead():
     # Broken up
     cotrans.clean_state()
     nothing = cotrans.forward_steps(sample[:, :, :-1], pad_end=False)  # init
-    assert isinstance(nothing, TensorPlaceholder)
+    assert nothing is None
 
     lasts = cotrans.forward_steps(sample[:, :, -1:], pad_end=True)
     assert torch.allclose(lasts.squeeze(), target.squeeze())

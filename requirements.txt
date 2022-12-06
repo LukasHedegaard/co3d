@@ -1,7 +1,7 @@
 ride~=0.6.0
 torchvision
 av
-continual-inference
+continual-inference>=1.0.2
 pytorchvideo~=0.1.5
 opencv-python
 torchmetrics~=0.5.0
